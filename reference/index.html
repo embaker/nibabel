@@ -1,0 +1,608 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Neuroimaging in Python &mdash; NiBabel 2.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nibabel.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="NiBabel 2.0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Documentation" href="../api.html" />
+    <link rel="next" title="nibabel" href="nibabel.html" />
+    <link rel="prev" title="wrapstruct" href="nibabel.wrapstruct.html" />
+  <meta name="keywords" content="nipy, neuroimaging, python, neuroscience">
+
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding-left: 150px; padding-bottom:50px; padding-top:20px; background-image: url(../_static/nipy-logo-bg-138x120.png); background-repeat: no-repeat;">
+<h1>NiBabel</h1>
+<h3 style="margin-top:-5px;color:#2f83c8">Access a cacophony of neuro-imaging file formats</h3>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="nibabel.html" title="nibabel"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="nibabel.wrapstruct.html" title="wrapstruct"
+             accesskey="P">previous</a> |</li>
+  <li><a href="http://nipy.org/">Community</a> |&nbsp;</li>
+  <li><a href="../index.html">NiBabel Home</a> |&nbsp;</li>
+  <li><a href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing list</a> |&nbsp;</li>
+  <li><a href="legal.html">License</a> |&nbsp;</li>
+
+          <li><a href="../api.html" accesskey="U">API Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="nibabel.wrapstruct.html"
+                        title="previous chapter"><tt class="docutils literal"><span class="pre">wrapstruct</span></tt></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nibabel.html"
+                        title="next chapter"><tt class="docutils literal"><span class="pre">nibabel</span></tt></a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/reference/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+<p><img src="../_static/reggie.png" alt="Reggie -- the one" /></p>
+
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.html"><tt class="docutils literal"><span class="pre">nibabel</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.html#website">Website</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.html#mailing-lists">Mailing Lists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.html#code">Code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.html#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.html#quickstart">Quickstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.html#get-info">get_info</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.affines.html"><tt class="docutils literal"><span class="pre">affines</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.affines.html#append-diag">append_diag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.affines.html#apply-affine">apply_affine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.affines.html#dot-reduce">dot_reduce</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.affines.html#from-matvec">from_matvec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.affines.html#to-matvec">to_matvec</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.analyze.html"><tt class="docutils literal"><span class="pre">analyze</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.analyze.html#the-analyze-header-format">The Analyze header format</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.analyze.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.analyze.html#analyzeheader"><tt class="docutils literal"><span class="pre">AnalyzeHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.analyze.html#analyzeimage"><tt class="docutils literal"><span class="pre">AnalyzeImage</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.analyze.html#load">load</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.arrayproxy.html"><tt class="docutils literal"><span class="pre">arrayproxy</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arrayproxy.html#id1"><tt class="docutils literal"><span class="pre">ArrayProxy</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arrayproxy.html#is-proxy">is_proxy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.arraywriters.html"><tt class="docutils literal"><span class="pre">arraywriters</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#arraywriter"><tt class="docutils literal"><span class="pre">ArrayWriter</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#scalingerror"><tt class="docutils literal"><span class="pre">ScalingError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#slopearraywriter"><tt class="docutils literal"><span class="pre">SlopeArrayWriter</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#slopeinterarraywriter"><tt class="docutils literal"><span class="pre">SlopeInterArrayWriter</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#writererror"><tt class="docutils literal"><span class="pre">WriterError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#get-slope-inter">get_slope_inter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.arraywriters.html#make-array-writer">make_array_writer</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.batteryrunners.html"><tt class="docutils literal"><span class="pre">batteryrunners</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.batteryrunners.html#more-about-checks">More about <tt class="docutils literal"><span class="pre">checks</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.batteryrunners.html#batteryrunner"><tt class="docutils literal"><span class="pre">BatteryRunner</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.batteryrunners.html#report"><tt class="docutils literal"><span class="pre">Report</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.benchmarks.html"><tt class="docutils literal"><span class="pre">benchmarks</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.benchmarks.html#module-nibabel.benchmarks.bench_array_to_file">Module: <tt class="docutils literal"><span class="pre">benchmarks.bench_array_to_file</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.benchmarks.html#module-nibabel.benchmarks.bench_fileslice">Module: <tt class="docutils literal"><span class="pre">benchmarks.bench_fileslice</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.benchmarks.html#module-nibabel.benchmarks.bench_finite_range">Module: <tt class="docutils literal"><span class="pre">benchmarks.bench_finite_range</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.benchmarks.html#module-nibabel.benchmarks.bench_load_save">Module: <tt class="docutils literal"><span class="pre">benchmarks.bench_load_save</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.benchmarks.html#module-nibabel.benchmarks.butils">Module: <tt class="docutils literal"><span class="pre">benchmarks.butils</span></tt></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.benchmarks.html#bench-array-to-file">bench_array_to_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.benchmarks.html#bench-fileslice">bench_fileslice</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.benchmarks.html#run-slices">run_slices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.benchmarks.html#bench-finite-range">bench_finite_range</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.benchmarks.html#bench-load-save">bench_load_save</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.benchmarks.html#print-git-title">print_git_title</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.casting.html"><tt class="docutils literal"><span class="pre">casting</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#castingerror"><tt class="docutils literal"><span class="pre">CastingError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#floatingerror"><tt class="docutils literal"><span class="pre">FloatingError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#able-int-type">able_int_type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#as-int">as_int</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#best-float">best_float</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#ceil-exact">ceil_exact</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#float-to-int">float_to_int</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#floor-exact">floor_exact</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#floor-log2">floor_log2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#have-binary128">have_binary128</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#int-abs">int_abs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#int-to-float">int_to_float</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#longdouble-lte-float64">longdouble_lte_float64</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#longdouble-precision-improved">longdouble_precision_improved</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#ok-floats">ok_floats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#on-powerpc">on_powerpc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#shared-range">shared_range</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#type-info">type_info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.casting.html#ulp">ulp</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.checkwarns.html"><tt class="docutils literal"><span class="pre">checkwarns</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.checkwarns.html#errorwarnings"><tt class="docutils literal"><span class="pre">ErrorWarnings</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.checkwarns.html#ignorewarnings"><tt class="docutils literal"><span class="pre">IgnoreWarnings</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.data.html"><tt class="docutils literal"><span class="pre">data</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#bomber"><tt class="docutils literal"><span class="pre">Bomber</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#bombererror"><tt class="docutils literal"><span class="pre">BomberError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#dataerror"><tt class="docutils literal"><span class="pre">DataError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#datasource"><tt class="docutils literal"><span class="pre">Datasource</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#versioneddatasource"><tt class="docutils literal"><span class="pre">VersionedDatasource</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#datasource-or-bomber">datasource_or_bomber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#find-data-dir">find_data_dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#get-data-path">get_data_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.data.html#make-datasource">make_datasource</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.deprecated.html"><tt class="docutils literal"><span class="pre">deprecated</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.deprecated.html#futurewarningmixin"><tt class="docutils literal"><span class="pre">FutureWarningMixin</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.deprecated.html#moduleproxy"><tt class="docutils literal"><span class="pre">ModuleProxy</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.dft.html"><tt class="docutils literal"><span class="pre">dft</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#cachingerror"><tt class="docutils literal"><span class="pre">CachingError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#dfterror"><tt class="docutils literal"><span class="pre">DFTError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#instancestackerror"><tt class="docutils literal"><span class="pre">InstanceStackError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#volumeerror"><tt class="docutils literal"><span class="pre">VolumeError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#clear-cache">clear_cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#get-studies">get_studies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.dft.html#update-cache">update_cache</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.ecat.html"><tt class="docutils literal"><span class="pre">ecat</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#ecatheader"><tt class="docutils literal"><span class="pre">EcatHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#ecatimage"><tt class="docutils literal"><span class="pre">EcatImage</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#ecatimagearrayproxy"><tt class="docutils literal"><span class="pre">EcatImageArrayProxy</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#ecatsubheader"><tt class="docutils literal"><span class="pre">EcatSubHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#get-frame-order">get_frame_order</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#get-series-framenumbers">get_series_framenumbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#load">load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#read-mlist">read_mlist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.ecat.html#read-subheaders">read_subheaders</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.environment.html"><tt class="docutils literal"><span class="pre">environment</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.environment.html#get-home-dir">get_home_dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.environment.html#get-nipy-system-dir">get_nipy_system_dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.environment.html#get-nipy-user-dir">get_nipy_user_dir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.eulerangles.html"><tt class="docutils literal"><span class="pre">eulerangles</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.eulerangles.html#angle-axis2euler">angle_axis2euler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.eulerangles.html#euler2angle-axis">euler2angle_axis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.eulerangles.html#euler2mat">euler2mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.eulerangles.html#euler2quat">euler2quat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.eulerangles.html#mat2euler">mat2euler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.eulerangles.html#quat2euler">quat2euler</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.fileholders.html"><tt class="docutils literal"><span class="pre">fileholders</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileholders.html#fileholder"><tt class="docutils literal"><span class="pre">FileHolder</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileholders.html#fileholdererror"><tt class="docutils literal"><span class="pre">FileHolderError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileholders.html#copy-file-map">copy_file_map</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.filename_parser.html"><tt class="docutils literal"><span class="pre">filename_parser</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.filename_parser.html#typesfilenameserror"><tt class="docutils literal"><span class="pre">TypesFilenamesError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.filename_parser.html#parse-filename">parse_filename</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.filename_parser.html#splitext-addext">splitext_addext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.filename_parser.html#types-filenames">types_filenames</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.fileslice.html"><tt class="docutils literal"><span class="pre">fileslice</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#calc-slicedefs">calc_slicedefs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#canonical-slicers">canonical_slicers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#id1">fileslice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#fill-slicer">fill_slicer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#is-fancy">is_fancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#optimize-read-slicers">optimize_read_slicers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#optimize-slicer">optimize_slicer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#predict-shape">predict_shape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#read-segments">read_segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#slice2len">slice2len</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#slice2outax">slice2outax</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#slicers2segments">slicers2segments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#strided-scalar">strided_scalar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.fileslice.html#threshold-heuristic">threshold_heuristic</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.freesurfer.html"><tt class="docutils literal"><span class="pre">freesurfer</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.freesurfer.html#module-nibabel.freesurfer.io">Module: <tt class="docutils literal"><span class="pre">freesurfer.io</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.freesurfer.html#module-nibabel.freesurfer.mghformat">Module: <tt class="docutils literal"><span class="pre">freesurfer.mghformat</span></tt></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#read-annot">read_annot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#read-geometry">read_geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#read-label">read_label</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#read-morph-data">read_morph_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#write-annot">write_annot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#write-geometry">write_geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#mgherror"><tt class="docutils literal"><span class="pre">MGHError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#mghheader"><tt class="docutils literal"><span class="pre">MGHHeader</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#mghimage"><tt class="docutils literal"><span class="pre">MGHImage</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.freesurfer.html#load">load</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.funcs.html"><tt class="docutils literal"><span class="pre">funcs</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.funcs.html#as-closest-canonical">as_closest_canonical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.funcs.html#concat-images">concat_images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.funcs.html#four-to-three">four_to_three</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.funcs.html#squeeze-image">squeeze_image</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.gifti.html"><tt class="docutils literal"><span class="pre">gifti</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.gifti.html#module-nibabel.gifti.gifti">Module: <tt class="docutils literal"><span class="pre">gifti.gifti</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.gifti.html#module-nibabel.gifti.giftiio">Module: <tt class="docutils literal"><span class="pre">gifti.giftiio</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.gifti.html#module-nibabel.gifti.parse_gifti_fast">Module: <tt class="docutils literal"><span class="pre">gifti.parse_gifti_fast</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.gifti.html#module-nibabel.gifti.util">Module: <tt class="docutils literal"><span class="pre">gifti.util</span></tt></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#gifticoordsystem"><tt class="docutils literal"><span class="pre">GiftiCoordSystem</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#giftidataarray"><tt class="docutils literal"><span class="pre">GiftiDataArray</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#giftiimage"><tt class="docutils literal"><span class="pre">GiftiImage</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#giftilabel"><tt class="docutils literal"><span class="pre">GiftiLabel</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#giftilabeltable"><tt class="docutils literal"><span class="pre">GiftiLabelTable</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#giftimetadata"><tt class="docutils literal"><span class="pre">GiftiMetaData</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#giftinvpairs"><tt class="docutils literal"><span class="pre">GiftiNVPairs</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#data-tag">data_tag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#read">read</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#write">write</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#outputter"><tt class="docutils literal"><span class="pre">Outputter</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#parse-gifti-file">parse_gifti_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.gifti.html#read-data-block">read_data_block</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.imageclasses.html"><tt class="docutils literal"><span class="pre">imageclasses</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.imageglobals.html"><tt class="docutils literal"><span class="pre">imageglobals</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.imageglobals.html#errorlevel"><tt class="docutils literal"><span class="pre">ErrorLevel</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.imageglobals.html#loggingoutputsuppressor"><tt class="docutils literal"><span class="pre">LoggingOutputSuppressor</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.keywordonly.html"><tt class="docutils literal"><span class="pre">keywordonly</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.keywordonly.html#kw-only-func">kw_only_func</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.keywordonly.html#kw-only-meth">kw_only_meth</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.loadsave.html"><tt class="docutils literal"><span class="pre">loadsave</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.loadsave.html#guessed-image-type">guessed_image_type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.loadsave.html#load">load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.loadsave.html#save">save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.loadsave.html#which-analyze-type">which_analyze_type</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.minc.html"><tt class="docutils literal"><span class="pre">minc</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.minc1.html"><tt class="docutils literal"><span class="pre">minc1</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#minc1file"><tt class="docutils literal"><span class="pre">Minc1File</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#minc1image"><tt class="docutils literal"><span class="pre">Minc1Image</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#mincerror"><tt class="docutils literal"><span class="pre">MincError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#mincfile"><tt class="docutils literal"><span class="pre">MincFile</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#mincheader"><tt class="docutils literal"><span class="pre">MincHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#mincimage"><tt class="docutils literal"><span class="pre">MincImage</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc1.html#mincimagearrayproxy"><tt class="docutils literal"><span class="pre">MincImageArrayProxy</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.minc2.html"><tt class="docutils literal"><span class="pre">minc2</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc2.html#hdf5bunch"><tt class="docutils literal"><span class="pre">Hdf5Bunch</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc2.html#minc2file"><tt class="docutils literal"><span class="pre">Minc2File</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.minc2.html#minc2image"><tt class="docutils literal"><span class="pre">Minc2Image</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.mriutils.html"><tt class="docutils literal"><span class="pre">mriutils</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.mriutils.html#mrierror"><tt class="docutils literal"><span class="pre">MRIError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.mriutils.html#calculate-dwell-time">calculate_dwell_time</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.nicom.html"><tt class="docutils literal"><span class="pre">nicom</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nicom.html#module-nibabel.nicom.csareader">Module: <tt class="docutils literal"><span class="pre">nicom.csareader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nicom.html#module-nibabel.nicom.dicomreaders">Module: <tt class="docutils literal"><span class="pre">nicom.dicomreaders</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nicom.html#module-nibabel.nicom.dicomwrappers">Module: <tt class="docutils literal"><span class="pre">nicom.dicomwrappers</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nicom.html#module-nibabel.nicom.dwiparams">Module: <tt class="docutils literal"><span class="pre">nicom.dwiparams</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nicom.html#module-nibabel.nicom.structreader">Module: <tt class="docutils literal"><span class="pre">nicom.structreader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nicom.html#module-nibabel.nicom.utils">Module: <tt class="docutils literal"><span class="pre">nicom.utils</span></tt></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#csaerror"><tt class="docutils literal"><span class="pre">CSAError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#csareaderror"><tt class="docutils literal"><span class="pre">CSAReadError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-acq-mat-txt">get_acq_mat_txt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-b-matrix">get_b_matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-b-value">get_b_value</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-csa-header">get_csa_header</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-g-vector">get_g_vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-ice-dims">get_ice_dims</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-n-mosaic">get_n_mosaic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-scalar">get_scalar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-slice-normal">get_slice_normal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#get-vector">get_vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#is-mosaic">is_mosaic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#nt-str">nt_str</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#read">read</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#dicomreaderror"><tt class="docutils literal"><span class="pre">DicomReadError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#mosaic-to-nii">mosaic_to_nii</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#read-mosaic-dir">read_mosaic_dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#read-mosaic-dwi-dir">read_mosaic_dwi_dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#slices-to-series">slices_to_series</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#mosaicwrapper"><tt class="docutils literal"><span class="pre">MosaicWrapper</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#multiframewrapper"><tt class="docutils literal"><span class="pre">MultiframeWrapper</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#siemenswrapper"><tt class="docutils literal"><span class="pre">SiemensWrapper</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#wrapper"><tt class="docutils literal"><span class="pre">Wrapper</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#wrappererror"><tt class="docutils literal"><span class="pre">WrapperError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#wrapperprecisionerror"><tt class="docutils literal"><span class="pre">WrapperPrecisionError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#none-or-close">none_or_close</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#wrapper-from-data">wrapper_from_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#wrapper-from-file">wrapper_from_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#b2q">B2q</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#nearest-pos-semi-def">nearest_pos_semi_def</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#q2bg">q2bg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#unpacker"><tt class="docutils literal"><span class="pre">Unpacker</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.nicom.html#find-private-section">find_private_section</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.nifti1.html"><tt class="docutils literal"><span class="pre">nifti1</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#nifti1extension"><tt class="docutils literal"><span class="pre">Nifti1Extension</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#nifti1extensions"><tt class="docutils literal"><span class="pre">Nifti1Extensions</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#nifti1header"><tt class="docutils literal"><span class="pre">Nifti1Header</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#nifti1image"><tt class="docutils literal"><span class="pre">Nifti1Image</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#nifti1pair"><tt class="docutils literal"><span class="pre">Nifti1Pair</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#nifti1pairheader"><tt class="docutils literal"><span class="pre">Nifti1PairHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#load">load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti1.html#save">save</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.nifti2.html"><tt class="docutils literal"><span class="pre">nifti2</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti2.html#nifti2header"><tt class="docutils literal"><span class="pre">Nifti2Header</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti2.html#nifti2image"><tt class="docutils literal"><span class="pre">Nifti2Image</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti2.html#nifti2pair"><tt class="docutils literal"><span class="pre">Nifti2Pair</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti2.html#nifti2pairheader"><tt class="docutils literal"><span class="pre">Nifti2PairHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti2.html#load">load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.nifti2.html#save">save</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.onetime.html"><tt class="docutils literal"><span class="pre">onetime</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.onetime.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.onetime.html#onetimeproperty"><tt class="docutils literal"><span class="pre">OneTimeProperty</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.onetime.html#resetmixin"><tt class="docutils literal"><span class="pre">ResetMixin</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.onetime.html#auto-attr">auto_attr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.onetime.html#setattr-on-read">setattr_on_read</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.openers.html"><tt class="docutils literal"><span class="pre">openers</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.openers.html#opener"><tt class="docutils literal"><span class="pre">Opener</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.optpkg.html"><tt class="docutils literal"><span class="pre">optpkg</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.optpkg.html#optional-package">optional_package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.orientations.html"><tt class="docutils literal"><span class="pre">orientations</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#orientationerror"><tt class="docutils literal"><span class="pre">OrientationError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#aff2axcodes">aff2axcodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#apply-orientation">apply_orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#axcodes2ornt">axcodes2ornt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#flip-axis">flip_axis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#inv-ornt-aff">inv_ornt_aff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#io-orientation">io_orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#ornt2axcodes">ornt2axcodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.orientations.html#ornt-transform">ornt_transform</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.parrec.html"><tt class="docutils literal"><span class="pre">parrec</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#par-file-format">PAR file format</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.parrec.html#general-information">General information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.parrec.html#image-information">Image information</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#orientation">Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#data-type">Data type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#parrecarrayproxy"><tt class="docutils literal"><span class="pre">PARRECArrayProxy</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#parrecerror"><tt class="docutils literal"><span class="pre">PARRECError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#parrecheader"><tt class="docutils literal"><span class="pre">PARRECHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#parrecimage"><tt class="docutils literal"><span class="pre">PARRECImage</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#load">load</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#one-line">one_line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#parse-par-header">parse_PAR_header</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#vol-is-full">vol_is_full</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.parrec.html#vol-numbers">vol_numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.py3k.html"><tt class="docutils literal"><span class="pre">py3k</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#asbytes-nested">asbytes_nested</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#asunicode">asunicode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#asunicode-nested">asunicode_nested</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#getexception">getexception</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#ints2bytes">ints2bytes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#isfileobj">isfileobj</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.py3k.html#open-latin1">open_latin1</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.quaternions.html"><tt class="docutils literal"><span class="pre">quaternions</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#angle-axis2mat">angle_axis2mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#angle-axis2quat">angle_axis2quat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#conjugate">conjugate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#eye">eye</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#fillpositive">fillpositive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#inverse">inverse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#isunit">isunit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#mat2quat">mat2quat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#mult">mult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#nearly-equivalent">nearly_equivalent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#norm">norm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#quat2angle-axis">quat2angle_axis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#quat2mat">quat2mat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.quaternions.html#rotate-vector">rotate_vector</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.rstutils.html"><tt class="docutils literal"><span class="pre">rstutils</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.rstutils.html#rst-table">rst_table</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.spaces.html"><tt class="docutils literal"><span class="pre">spaces</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spaces.html#slice2volume">slice2volume</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spaces.html#vox2out-vox">vox2out_vox</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.spatialimages.html"><tt class="docutils literal"><span class="pre">spatialimages</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#there-are-several-ways-of-writing-data">There are several ways of writing data.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#files-interface">Files interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#header"><tt class="docutils literal"><span class="pre">Header</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#headerdataerror"><tt class="docutils literal"><span class="pre">HeaderDataError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#headertypeerror"><tt class="docutils literal"><span class="pre">HeaderTypeError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#imagedataerror"><tt class="docutils literal"><span class="pre">ImageDataError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#imagefileerror"><tt class="docutils literal"><span class="pre">ImageFileError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#spatialimage"><tt class="docutils literal"><span class="pre">SpatialImage</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spatialimages.html#supported-np-types">supported_np_types</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.spm2analyze.html"><tt class="docutils literal"><span class="pre">spm2analyze</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spm2analyze.html#spm2analyzeheader"><tt class="docutils literal"><span class="pre">Spm2AnalyzeHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spm2analyze.html#spm2analyzeimage"><tt class="docutils literal"><span class="pre">Spm2AnalyzeImage</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.spm99analyze.html"><tt class="docutils literal"><span class="pre">spm99analyze</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spm99analyze.html#spm99analyzeheader"><tt class="docutils literal"><span class="pre">Spm99AnalyzeHeader</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spm99analyze.html#spm99analyzeimage"><tt class="docutils literal"><span class="pre">Spm99AnalyzeImage</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.spm99analyze.html#spmanalyzeheader"><tt class="docutils literal"><span class="pre">SpmAnalyzeHeader</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.tmpdirs.html"><tt class="docutils literal"><span class="pre">tmpdirs</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.tmpdirs.html#ingivendirectory"><tt class="docutils literal"><span class="pre">InGivenDirectory</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.tmpdirs.html#intemporarydirectory"><tt class="docutils literal"><span class="pre">InTemporaryDirectory</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.tmpdirs.html#temporarydirectory"><tt class="docutils literal"><span class="pre">TemporaryDirectory</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.trackvis.html"><tt class="docutils literal"><span class="pre">trackvis</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#dataerror"><tt class="docutils literal"><span class="pre">DataError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#headererror"><tt class="docutils literal"><span class="pre">HeaderError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#trackvisfile"><tt class="docutils literal"><span class="pre">TrackvisFile</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#trackvisfileerror"><tt class="docutils literal"><span class="pre">TrackvisFileError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#aff-from-hdr">aff_from_hdr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#aff-to-hdr">aff_to_hdr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#empty-header">empty_header</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#read">read</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.trackvis.html#write">write</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.tripwire.html"><tt class="docutils literal"><span class="pre">tripwire</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.tripwire.html#id1"><tt class="docutils literal"><span class="pre">TripWire</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.tripwire.html#tripwireerror"><tt class="docutils literal"><span class="pre">TripWireError</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.tripwire.html#is-tripwire">is_tripwire</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.volumeutils.html"><tt class="docutils literal"><span class="pre">volumeutils</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#binopener"><tt class="docutils literal"><span class="pre">BinOpener</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#dtypemapper"><tt class="docutils literal"><span class="pre">DtypeMapper</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#recoder"><tt class="docutils literal"><span class="pre">Recoder</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#allopen">allopen</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#apply-read-scaling">apply_read_scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#array-from-file">array_from_file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#array-to-file">array_to_file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#best-write-scale-ftype">best_write_scale_ftype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#better-float-of">better_float_of</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#finite-range">finite_range</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#fname-ext-ul-case">fname_ext_ul_case</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#int-scinter-ftype">int_scinter_ftype</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#make-dt-codes">make_dt_codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#pretty-mapping">pretty_mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#rec2dict">rec2dict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#seek-tell">seek_tell</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#shape-zoom-affine">shape_zoom_affine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#working-type">working_type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.volumeutils.html#write-zeros">write_zeros</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nibabel.wrapstruct.html"><tt class="docutils literal"><span class="pre">wrapstruct</span></tt></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.wrapstruct.html#id1">wrapstruct</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.wrapstruct.html#mappingness">Mappingness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nibabel.wrapstruct.html#consistency-checks">Consistency checks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.wrapstruct.html#labeledwrapstruct"><tt class="docutils literal"><span class="pre">LabeledWrapStruct</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.wrapstruct.html#id2"><tt class="docutils literal"><span class="pre">WrapStruct</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="nibabel.wrapstruct.html#wrapstructerror"><tt class="docutils literal"><span class="pre">WrapStructError</span></tt></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2006-2015, Matthew Brett, Michael Hanke and Eric Larson &lt;nipy-devel@neuroimaging.scipy.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

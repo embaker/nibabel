@@ -1,0 +1,895 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Neuroimaging in Python &mdash; NiBabel 2.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nibabel.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="NiBabel 2.0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Documentation" href="../api.html" />
+    <link rel="prev" title="spm99analyze" href="nibabel.spm99analyze.html" />
+  <meta name="keywords" content="nipy, neuroimaging, python, neuroscience">
+
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding-left: 150px; padding-bottom:50px; padding-top:20px; background-image: url(../_static/nipy-logo-bg-138x120.png); background-repeat: no-repeat;">
+<h1>NiBabel</h1>
+<h3 style="margin-top:-5px;color:#2f83c8">Access a cacophony of neuro-imaging file formats</h3>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="nibabel.spm99analyze.html" title="spm99analyze"
+             accesskey="P">previous</a> |</li>
+  <li><a href="http://nipy.org/">Community</a> |&nbsp;</li>
+  <li><a href="../index.html">NiBabel Home</a> |&nbsp;</li>
+  <li><a href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing list</a> |&nbsp;</li>
+  <li><a href="legal.html">License</a> |&nbsp;</li>
+
+          <li><a href="../api.html" accesskey="U">API Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><tt class="docutils literal"><span class="pre">gifti</span></tt></a><ul>
+<li><a class="reference internal" href="#module-nibabel.gifti.gifti">Module: <tt class="docutils literal"><span class="pre">gifti.gifti</span></tt></a></li>
+<li><a class="reference internal" href="#module-nibabel.gifti.giftiio">Module: <tt class="docutils literal"><span class="pre">gifti.giftiio</span></tt></a></li>
+<li><a class="reference internal" href="#module-nibabel.gifti.parse_gifti_fast">Module: <tt class="docutils literal"><span class="pre">gifti.parse_gifti_fast</span></tt></a></li>
+<li><a class="reference internal" href="#module-nibabel.gifti.util">Module: <tt class="docutils literal"><span class="pre">gifti.util</span></tt></a><ul>
+<li><a class="reference internal" href="#gifticoordsystem"><tt class="docutils literal"><span class="pre">GiftiCoordSystem</span></tt></a></li>
+<li><a class="reference internal" href="#giftidataarray"><tt class="docutils literal"><span class="pre">GiftiDataArray</span></tt></a></li>
+<li><a class="reference internal" href="#giftiimage"><tt class="docutils literal"><span class="pre">GiftiImage</span></tt></a></li>
+<li><a class="reference internal" href="#giftilabel"><tt class="docutils literal"><span class="pre">GiftiLabel</span></tt></a></li>
+<li><a class="reference internal" href="#giftilabeltable"><tt class="docutils literal"><span class="pre">GiftiLabelTable</span></tt></a></li>
+<li><a class="reference internal" href="#giftimetadata"><tt class="docutils literal"><span class="pre">GiftiMetaData</span></tt></a></li>
+<li><a class="reference internal" href="#giftinvpairs"><tt class="docutils literal"><span class="pre">GiftiNVPairs</span></tt></a></li>
+<li><a class="reference internal" href="#data-tag">data_tag</a></li>
+<li><a class="reference internal" href="#read">read</a></li>
+<li><a class="reference internal" href="#write">write</a></li>
+<li><a class="reference internal" href="#outputter"><tt class="docutils literal"><span class="pre">Outputter</span></tt></a></li>
+<li><a class="reference internal" href="#parse-gifti-file">parse_gifti_file</a></li>
+<li><a class="reference internal" href="#read-data-block">read_data_block</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="nibabel.spm99analyze.html"
+                        title="previous chapter"><tt class="docutils literal"><span class="pre">spm99analyze</span></tt></a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/reference/nibabel.gifti.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+<p><img src="../_static/reggie.png" alt="Reggie -- the one" /></p>
+
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-nibabel.gifti">
+<span id="gifti"></span><h1><tt class="xref py py-mod docutils literal"><span class="pre">gifti</span></tt><a class="headerlink" href="#module-nibabel.gifti" title="Permalink to this headline">¶</a></h1>
+<p>GIfTI format IO</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#module-nibabel.gifti.giftiio" title="nibabel.gifti.giftiio"><tt class="xref py py-obj docutils literal"><span class="pre">giftiio</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#module-nibabel.gifti.gifti" title="nibabel.gifti.gifti"><tt class="xref py py-obj docutils literal"><span class="pre">gifti</span></tt></a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+</tbody>
+</table>
+<div class="section" id="module-nibabel.gifti.gifti">
+<span id="module-gifti-gifti"></span><h2>Module: <tt class="xref py py-mod docutils literal"><span class="pre">gifti.gifti</span></tt><a class="headerlink" href="#module-nibabel.gifti.gifti" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiCoordSystem" title="nibabel.gifti.gifti.GiftiCoordSystem"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiCoordSystem</span></tt></a>([dataspace,&nbsp;xformspace,&nbsp;xform])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiDataArray" title="nibabel.gifti.gifti.GiftiDataArray"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiDataArray</span></tt></a>([data])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiImage" title="nibabel.gifti.gifti.GiftiImage"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiImage</span></tt></a>([meta,&nbsp;labeltable,&nbsp;darrays,&nbsp;version])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiLabel" title="nibabel.gifti.gifti.GiftiLabel"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiLabel</span></tt></a>([key,&nbsp;label,&nbsp;red,&nbsp;green,&nbsp;blue,&nbsp;alpha])</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiLabelTable" title="nibabel.gifti.gifti.GiftiLabelTable"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiLabelTable</span></tt></a>()</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiMetaData" title="nibabel.gifti.gifti.GiftiMetaData"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiMetaData</span></tt></a>([nvpair])</td>
+<td>A list of GiftiNVPairs in stored in</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.gifti.GiftiNVPairs" title="nibabel.gifti.gifti.GiftiNVPairs"><tt class="xref py py-obj docutils literal"><span class="pre">GiftiNVPairs</span></tt></a>([name,&nbsp;value])</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.gifti.gifti.data_tag" title="nibabel.gifti.gifti.data_tag"><tt class="xref py py-obj docutils literal"><span class="pre">data_tag</span></tt></a>(dataarray,&nbsp;encoding,&nbsp;datatype,&nbsp;ordering)</td>
+<td>Creates the data tag depending on the required encoding</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-nibabel.gifti.giftiio">
+<span id="module-gifti-giftiio"></span><h2>Module: <tt class="xref py py-mod docutils literal"><span class="pre">gifti.giftiio</span></tt><a class="headerlink" href="#module-nibabel.gifti.giftiio" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.giftiio.read" title="nibabel.gifti.giftiio.read"><tt class="xref py py-obj docutils literal"><span class="pre">read</span></tt></a>(filename)</td>
+<td>Load a Gifti image from a file</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.gifti.giftiio.write" title="nibabel.gifti.giftiio.write"><tt class="xref py py-obj docutils literal"><span class="pre">write</span></tt></a>(image,&nbsp;filename)</td>
+<td>Save the current image to a new file</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-nibabel.gifti.parse_gifti_fast">
+<span id="module-gifti-parse-gifti-fast"></span><h2>Module: <tt class="xref py py-mod docutils literal"><span class="pre">gifti.parse_gifti_fast</span></tt><a class="headerlink" href="#module-nibabel.gifti.parse_gifti_fast" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.parse_gifti_fast.Outputter" title="nibabel.gifti.parse_gifti_fast.Outputter"><tt class="xref py py-obj docutils literal"><span class="pre">Outputter</span></tt></a>()</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.gifti.parse_gifti_fast.parse_gifti_file" title="nibabel.gifti.parse_gifti_fast.parse_gifti_file"><tt class="xref py py-obj docutils literal"><span class="pre">parse_gifti_file</span></tt></a>(fname[,&nbsp;buffer_size])</td>
+<td>Parse gifti file named <cite>fname</cite>, return image</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.gifti.parse_gifti_fast.read_data_block" title="nibabel.gifti.parse_gifti_fast.read_data_block"><tt class="xref py py-obj docutils literal"><span class="pre">read_data_block</span></tt></a>(encoding,&nbsp;endian,&nbsp;ordering,&nbsp;...)</td>
+<td>Tries to unzip, decode, parse the funny string data</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-nibabel.gifti.util">
+<span id="module-gifti-util"></span><h2>Module: <tt class="xref py py-mod docutils literal"><span class="pre">gifti.util</span></tt><a class="headerlink" href="#module-nibabel.gifti.util" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+</tbody>
+</table>
+<div class="section" id="gifticoordsystem">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiCoordSystem" title="nibabel.gifti.gifti.GiftiCoordSystem"><tt class="xref py py-class docutils literal"><span class="pre">GiftiCoordSystem</span></tt></a><a class="headerlink" href="#gifticoordsystem" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiCoordSystem</tt><big>(</big><em>dataspace=0</em>, <em>xformspace=0</em>, <em>xform=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>dataspace=0</em>, <em>xformspace=0</em>, <em>xform=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem.dataspace">
+<tt class="descname">dataspace</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem.dataspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem.print_summary">
+<tt class="descname">print_summary</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem.print_summary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem.to_xml">
+<tt class="descname">to_xml</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem.to_xml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem.xform">
+<tt class="descname">xform</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem.xform" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">ndarray</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiCoordSystem.xformspace">
+<tt class="descname">xformspace</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiCoordSystem.xformspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="giftidataarray">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiDataArray" title="nibabel.gifti.gifti.GiftiDataArray"><tt class="xref py py-class docutils literal"><span class="pre">GiftiDataArray</span></tt></a><a class="headerlink" href="#giftidataarray" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiDataArray">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiDataArray</tt><big>(</big><em>data=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>data=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.coordsys">
+<tt class="descname">coordsys</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.coordsys" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#nibabel.gifti.gifti.GiftiCoordSystem" title="nibabel.gifti.gifti.GiftiCoordSystem"><tt class="xref py py-class docutils literal"><span class="pre">GiftiCoordSystem</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.data">
+<tt class="descname">data</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">ndarray</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.datatype">
+<tt class="descname">datatype</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.datatype" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.dims">
+<tt class="descname">dims</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.dims" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">list</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.encoding">
+<tt class="descname">encoding</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.encoding" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.endian">
+<tt class="descname">endian</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.endian" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.ext_fname">
+<tt class="descname">ext_fname</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.ext_fname" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.ext_offset">
+<tt class="descname">ext_offset</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.ext_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.from_array">
+<em class="property">classmethod </em><tt class="descname">from_array</tt><big>(</big><em>klass</em>, <em>darray</em>, <em>intent</em>, <em>datatype=None</em>, <em>encoding='GIFTI_ENCODING_B64GZ'</em>, <em>endian='little'</em>, <em>coordsys=None</em>, <em>ordering='C'</em>, <em>meta=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.from_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new Gifti data array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>darray</strong> : ndarray</p>
+<blockquote>
+<div><p>NumPy data array</p>
+</div></blockquote>
+<p><strong>intent</strong> : string</p>
+<blockquote>
+<div><p>NIFTI intent code, see nifti1.intent_codes</p>
+</div></blockquote>
+<p><strong>datatype</strong> : None or string, optional</p>
+<blockquote>
+<div><p>NIFTI data type codes, see nifti1.data_type_codes
+If None, the datatype of the NumPy array is taken.</p>
+</div></blockquote>
+<p><strong>encoding</strong> : string, optionaal</p>
+<blockquote>
+<div><p>Encoding of the data, see util.gifti_encoding_codes;
+default: GIFTI_ENCODING_B64GZ</p>
+</div></blockquote>
+<p><strong>endian</strong> : string, optional</p>
+<blockquote>
+<div><p>The Endianness to store the data array.  Should correspond to the
+machine endianness.  default: system byteorder</p>
+</div></blockquote>
+<p><strong>coordsys</strong> : GiftiCoordSystem, optional</p>
+<blockquote>
+<div><p>If None, a identity transformation is taken.</p>
+</div></blockquote>
+<p><strong>ordering</strong> : string, optional</p>
+<blockquote>
+<div><p>The ordering of the array. see util.array_index_order_codes;
+default: RowMajorOrder - C ordering</p>
+</div></blockquote>
+<p><strong>meta</strong> : None or dict, optional</p>
+<blockquote>
+<div><p>A dictionary for metadata information.  If None, gives empty dict.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>da</strong> : instance of our own class</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.get_metadata">
+<tt class="descname">get_metadata</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata as dictionary</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.ind_ord">
+<tt class="descname">ind_ord</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.ind_ord" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.intent">
+<tt class="descname">intent</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.intent" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.meta">
+<tt class="descname">meta</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#nibabel.gifti.gifti.GiftiMetaData" title="nibabel.gifti.gifti.GiftiMetaData"><tt class="xref py py-class docutils literal"><span class="pre">GiftiMetaData</span></tt></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.num_dim">
+<tt class="descname">num_dim</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.num_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.print_summary">
+<tt class="descname">print_summary</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.print_summary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.to_xml">
+<tt class="descname">to_xml</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.to_xml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.to_xml_close">
+<tt class="descname">to_xml_close</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.to_xml_close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiDataArray.to_xml_open">
+<tt class="descname">to_xml_open</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiDataArray.to_xml_open" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="giftiimage">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiImage" title="nibabel.gifti.gifti.GiftiImage"><tt class="xref py py-class docutils literal"><span class="pre">GiftiImage</span></tt></a><a class="headerlink" href="#giftiimage" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiImage">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiImage</tt><big>(</big><em>meta=None</em>, <em>labeltable=None</em>, <em>darrays=None</em>, <em>version='1.0'</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>meta=None</em>, <em>labeltable=None</em>, <em>darrays=None</em>, <em>version='1.0'</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.add_gifti_data_array">
+<tt class="descname">add_gifti_data_array</tt><big>(</big><em>dataarr</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.add_gifti_data_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a data array to the GiftiImage</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataarr</strong> : GiftiDataArray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiImage.filename">
+<tt class="descname">filename</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.getArraysFromIntent">
+<tt class="descname">getArraysFromIntent</tt><big>(</big><em>intent</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.getArraysFromIntent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a a list of GiftiDataArray elements matching
+the given intent</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.get_labeltable">
+<tt class="descname">get_labeltable</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.get_labeltable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.get_metadata">
+<tt class="descname">get_metadata</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiImage.numDA">
+<tt class="descname">numDA</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.numDA" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.print_summary">
+<tt class="descname">print_summary</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.print_summary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.remove_gifti_data_array">
+<tt class="descname">remove_gifti_data_array</tt><big>(</big><em>ith</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.remove_gifti_data_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the ith data array element from the GiftiImage</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.remove_gifti_data_array_by_intent">
+<tt class="descname">remove_gifti_data_array_by_intent</tt><big>(</big><em>intent</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.remove_gifti_data_array_by_intent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes all the data arrays with the given intent type</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.set_labeltable">
+<tt class="descname">set_labeltable</tt><big>(</big><em>labeltable</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.set_labeltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the labeltable for this GiftiImage</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>labeltable</strong> : GiftiLabelTable</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.set_metadata">
+<tt class="descname">set_metadata</tt><big>(</big><em>meta</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.set_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the metadata for this GiftiImage</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>meta</strong> : GiftiMetaData</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>None</strong> :</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiImage.to_xml">
+<tt class="descname">to_xml</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.to_xml" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return XML corresponding to image content</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiImage.version">
+<tt class="descname">version</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiImage.version" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="giftilabel">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiLabel" title="nibabel.gifti.gifti.GiftiLabel"><tt class="xref py py-class docutils literal"><span class="pre">GiftiLabel</span></tt></a><a class="headerlink" href="#giftilabel" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiLabel">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiLabel</tt><big>(</big><em>key=0</em>, <em>label=''</em>, <em>red=None</em>, <em>green=None</em>, <em>blue=None</em>, <em>alpha=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiLabel.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>key=0</em>, <em>label=''</em>, <em>red=None</em>, <em>green=None</em>, <em>blue=None</em>, <em>alpha=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiLabel.alpha">
+<tt class="descname">alpha</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">float</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiLabel.blue">
+<tt class="descname">blue</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.blue" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">float</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiLabel.get_rgba">
+<tt class="descname">get_rgba</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.get_rgba" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns RGBA as tuple</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiLabel.green">
+<tt class="descname">green</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.green" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">float</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiLabel.key">
+<tt class="descname">key</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.key" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiLabel.label">
+<tt class="descname">label</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.label" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiLabel.red">
+<tt class="descname">red</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabel.red" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">float</span></tt></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="giftilabeltable">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiLabelTable" title="nibabel.gifti.gifti.GiftiLabelTable"><tt class="xref py py-class docutils literal"><span class="pre">GiftiLabelTable</span></tt></a><a class="headerlink" href="#giftilabeltable" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiLabelTable">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiLabelTable</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabelTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiLabelTable.__init__">
+<tt class="descname">__init__</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabelTable.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiLabelTable.get_labels_as_dict">
+<tt class="descname">get_labels_as_dict</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabelTable.get_labels_as_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiLabelTable.print_summary">
+<tt class="descname">print_summary</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabelTable.print_summary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiLabelTable.to_xml">
+<tt class="descname">to_xml</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiLabelTable.to_xml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="giftimetadata">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiMetaData" title="nibabel.gifti.gifti.GiftiMetaData"><tt class="xref py py-class docutils literal"><span class="pre">GiftiMetaData</span></tt></a><a class="headerlink" href="#giftimetadata" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiMetaData">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiMetaData</tt><big>(</big><em>nvpair=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiMetaData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A list of GiftiNVPairs in stored in
+the list self.data</p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiMetaData.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>nvpair=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiMetaData.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="nibabel.gifti.gifti.GiftiMetaData.from_dict">
+<em class="property">classmethod </em><tt class="descname">from_dict</tt><big>(</big><em>klass</em>, <em>data_dict</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiMetaData.from_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiMetaData.get_metadata">
+<tt class="descname">get_metadata</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiMetaData.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns metadata as dictionary</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiMetaData.print_summary">
+<tt class="descname">print_summary</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiMetaData.print_summary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiMetaData.to_xml">
+<tt class="descname">to_xml</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiMetaData.to_xml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="giftinvpairs">
+<h3><a class="reference internal" href="#nibabel.gifti.gifti.GiftiNVPairs" title="nibabel.gifti.gifti.GiftiNVPairs"><tt class="xref py py-class docutils literal"><span class="pre">GiftiNVPairs</span></tt></a><a class="headerlink" href="#giftinvpairs" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.gifti.GiftiNVPairs">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">GiftiNVPairs</tt><big>(</big><em>name=''</em>, <em>value=''</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiNVPairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.gifti.GiftiNVPairs.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>name=''</em>, <em>value=''</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.GiftiNVPairs.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiNVPairs.name">
+<tt class="descname">name</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiNVPairs.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.gifti.GiftiNVPairs.value">
+<tt class="descname">value</tt><a class="headerlink" href="#nibabel.gifti.gifti.GiftiNVPairs.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="data-tag">
+<h3>data_tag<a class="headerlink" href="#data-tag" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="nibabel.gifti.gifti.data_tag">
+<tt class="descclassname">nibabel.gifti.gifti.</tt><tt class="descname">data_tag</tt><big>(</big><em>dataarray</em>, <em>encoding</em>, <em>datatype</em>, <em>ordering</em><big>)</big><a class="headerlink" href="#nibabel.gifti.gifti.data_tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the data tag depending on the required encoding</p>
+</dd></dl>
+
+</div>
+<div class="section" id="read">
+<h3>read<a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="nibabel.gifti.giftiio.read">
+<tt class="descclassname">nibabel.gifti.giftiio.</tt><tt class="descname">read</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#nibabel.gifti.giftiio.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a Gifti image from a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filename</strong> : string</p>
+<blockquote>
+<div><p>The Gifti file to open, it has usually ending .gii</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>img</strong> : GiftiImage</p>
+<blockquote class="last">
+<div><p>Returns a GiftiImage</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="write">
+<h3>write<a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="nibabel.gifti.giftiio.write">
+<tt class="descclassname">nibabel.gifti.giftiio.</tt><tt class="descname">write</tt><big>(</big><em>image</em>, <em>filename</em><big>)</big><a class="headerlink" href="#nibabel.gifti.giftiio.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the current image to a new file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>image</strong> : GiftiImage</p>
+<blockquote>
+<div><p>A GiftiImage instance to store</p>
+</div></blockquote>
+<p><strong>filename</strong> : string</p>
+<blockquote>
+<div><p>Filename to store the Gifti file to</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>None</strong> :</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>We write all files with utf-8 encoding, and specify this at the top of the
+XML file with the <tt class="docutils literal"><span class="pre">encoding</span></tt> attribute.</p>
+<p>The Gifti spec suggests using the following suffixes to your
+filename when saving each specific type of data:</p>
+<dl class="docutils">
+<dt>.gii</dt>
+<dd>Generic GIFTI File</dd>
+<dt>.coord.gii</dt>
+<dd>Coordinates</dd>
+<dt>.func.gii</dt>
+<dd>Functional</dd>
+<dt>.label.gii</dt>
+<dd>Labels</dd>
+<dt>.rgba.gii</dt>
+<dd>RGB or RGBA</dd>
+<dt>.shape.gii</dt>
+<dd>Shape</dd>
+<dt>.surf.gii</dt>
+<dd>Surface</dd>
+<dt>.tensor.gii</dt>
+<dd>Tensors</dd>
+<dt>.time.gii</dt>
+<dd>Time Series</dd>
+<dt>.topo.gii</dt>
+<dd>Topology</dd>
+</dl>
+<p>The Gifti file is stored in endian convention of the current machine.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="outputter">
+<h3><a class="reference internal" href="#nibabel.gifti.parse_gifti_fast.Outputter" title="nibabel.gifti.parse_gifti_fast.Outputter"><tt class="xref py py-class docutils literal"><span class="pre">Outputter</span></tt></a><a class="headerlink" href="#outputter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter">
+<em class="property">class </em><tt class="descclassname">nibabel.gifti.parse_gifti_fast.</tt><tt class="descname">Outputter</tt><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<dl class="method">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.__init__">
+<tt class="descname">__init__</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.CharacterDataHandler">
+<tt class="descname">CharacterDataHandler</tt><big>(</big><em>data</em><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.CharacterDataHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collect character data chunks pending collation</p>
+<p>The parser breaks the data up into chunks of size depending on the
+buffer_size of the parser.  A large bit of character data, with standard
+parser buffer_size (such as 8K) can easily span many calls to this
+function.  We thus collect the chunks and process them when we hit start
+or end tags.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.EndElementHandler">
+<tt class="descname">EndElementHandler</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.EndElementHandler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.StartElementHandler">
+<tt class="descname">StartElementHandler</tt><big>(</big><em>name</em>, <em>attrs</em><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.StartElementHandler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.flush_chardata">
+<tt class="descname">flush_chardata</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.flush_chardata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collate and process collected character data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.initialize">
+<tt class="descname">initialize</tt><big>(</big><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize outputter</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="nibabel.gifti.parse_gifti_fast.Outputter.pending_data">
+<tt class="descname">pending_data</tt><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.Outputter.pending_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if there is character data pending for processing</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="parse-gifti-file">
+<h3>parse_gifti_file<a class="headerlink" href="#parse-gifti-file" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="nibabel.gifti.parse_gifti_fast.parse_gifti_file">
+<tt class="descclassname">nibabel.gifti.parse_gifti_fast.</tt><tt class="descname">parse_gifti_file</tt><big>(</big><em>fname</em>, <em>buffer_size=None</em><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.parse_gifti_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse gifti file named <cite>fname</cite>, return image</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>fname</strong> : str</p>
+<blockquote>
+<div><p>filename of gifti file</p>
+</div></blockquote>
+<p><strong>buffer_size: None or int, optional</strong> :</p>
+<blockquote>
+<div><p>size of read buffer. None gives default of 35000000 unless on python &lt;
+2.6, in which case it is read only in the parser.  In that case values
+other than None cause a ValueError on execution</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>img</strong> : gifti image</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="read-data-block">
+<h3>read_data_block<a class="headerlink" href="#read-data-block" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="nibabel.gifti.parse_gifti_fast.read_data_block">
+<tt class="descclassname">nibabel.gifti.parse_gifti_fast.</tt><tt class="descname">read_data_block</tt><big>(</big><em>encoding</em>, <em>endian</em>, <em>ordering</em>, <em>datatype</em>, <em>shape</em>, <em>data</em><big>)</big><a class="headerlink" href="#nibabel.gifti.parse_gifti_fast.read_data_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to unzip, decode, parse the funny string data</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2006-2015, Matthew Brett, Michael Hanke and Eric Larson &lt;nipy-devel@neuroimaging.scipy.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

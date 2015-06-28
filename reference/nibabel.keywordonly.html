@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Neuroimaging in Python &mdash; NiBabel 2.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nibabel.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="NiBabel 2.0.1 documentation" href="../index.html" />
+    <link rel="up" title="API Reference" href="index.html" />
+    <link rel="next" title="loadsave" href="nibabel.loadsave.html" />
+    <link rel="prev" title="imageglobals" href="nibabel.imageglobals.html" />
+  <meta name="keywords" content="nipy, neuroimaging, python, neuroscience">
+
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding-left: 150px; padding-bottom:50px; padding-top:20px; background-image: url(../_static/nipy-logo-bg-138x120.png); background-repeat: no-repeat;">
+<h1>NiBabel</h1>
+<h3 style="margin-top:-5px;color:#2f83c8">Access a cacophony of neuro-imaging file formats</h3>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="nibabel.loadsave.html" title="loadsave"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="nibabel.imageglobals.html" title="imageglobals"
+             accesskey="P">previous</a> |</li>
+  <li><a href="http://nipy.org/">Community</a> |&nbsp;</li>
+  <li><a href="../index.html">NiBabel Home</a> |&nbsp;</li>
+  <li><a href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing list</a> |&nbsp;</li>
+  <li><a href="legal.html">License</a> |&nbsp;</li>
+
+          <li><a href="../api.html" >API Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><tt class="docutils literal"><span class="pre">keywordonly</span></tt></a><ul>
+<li><a class="reference internal" href="#kw-only-func">kw_only_func</a></li>
+<li><a class="reference internal" href="#kw-only-meth">kw_only_meth</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="nibabel.imageglobals.html"
+                        title="previous chapter"><tt class="docutils literal"><span class="pre">imageglobals</span></tt></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nibabel.loadsave.html"
+                        title="next chapter"><tt class="docutils literal"><span class="pre">loadsave</span></tt></a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/reference/nibabel.keywordonly.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+<p><img src="../_static/reggie.png" alt="Reggie -- the one" /></p>
+
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-nibabel.keywordonly">
+<span id="keywordonly"></span><h1><tt class="xref py py-mod docutils literal"><span class="pre">keywordonly</span></tt><a class="headerlink" href="#module-nibabel.keywordonly" title="Permalink to this headline">¶</a></h1>
+<p>Decorator for labeling keyword arguments as keyword only</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#nibabel.keywordonly.kw_only_func" title="nibabel.keywordonly.kw_only_func"><tt class="xref py py-obj docutils literal"><span class="pre">kw_only_func</span></tt></a>(n)</td>
+<td>Return function decorator enforcing maximum of <cite>n</cite> positional arguments</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nibabel.keywordonly.kw_only_meth" title="nibabel.keywordonly.kw_only_meth"><tt class="xref py py-obj docutils literal"><span class="pre">kw_only_meth</span></tt></a>(n)</td>
+<td>Return method decorator enforcing maximum of <cite>n</cite> positional arguments</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="kw-only-func">
+<h2>kw_only_func<a class="headerlink" href="#kw-only-func" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="nibabel.keywordonly.kw_only_func">
+<tt class="descclassname">nibabel.keywordonly.</tt><tt class="descname">kw_only_func</tt><big>(</big><em>n</em><big>)</big><a class="headerlink" href="#nibabel.keywordonly.kw_only_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return function decorator enforcing maximum of <cite>n</cite> positional arguments</p>
+</dd></dl>
+
+</div>
+<div class="section" id="kw-only-meth">
+<h2>kw_only_meth<a class="headerlink" href="#kw-only-meth" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="nibabel.keywordonly.kw_only_meth">
+<tt class="descclassname">nibabel.keywordonly.</tt><tt class="descname">kw_only_meth</tt><big>(</big><em>n</em><big>)</big><a class="headerlink" href="#nibabel.keywordonly.kw_only_meth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return method decorator enforcing maximum of <cite>n</cite> positional arguments</p>
+<p>The method has at least one positional argument <tt class="docutils literal"><span class="pre">self</span></tt> or <tt class="docutils literal"><span class="pre">cls</span></tt>; allow
+for that.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2006-2015, Matthew Brett, Michael Hanke and Eric Larson &lt;nipy-devel@neuroimaging.scipy.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
