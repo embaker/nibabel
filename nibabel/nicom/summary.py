@@ -372,45 +372,46 @@ class ElementSummary(object):
             # if there is a single index, then all elements are constant
             idx = indices[0]
             for key, var_elem in six.iteritems(self._varying_elems):
-                val = var_elem.which(idx)
-                result._const_elems[key] = val
+                result._const_elems[key] = var_elem.which(idx)
 
         return result
 
 
-    def split(self, key):
+    def split(self, key, defualt=None):
         """Generator that splits the summary into sub-summaries that share the
         same value for the given key.
         """
-
         if key in self._const_elems:
             yield self._const_elems[key], deepcopy(self)
-            return
+        elif key not in self._varying_elems:
+            yield defualt, deepcopy(self)
+        else:
+            pvt_elem = self._varying_elems[key]
+            filled = bitarray(self.size)
+            filled.setall(0)
+            for pvt_key, pvt_val in six.iteritems(pvt_elem):
+                if isinstance(pvt_val, bitarray):
+                    filled |= pvt_val
+                    indices = [i for i, b in enumerate(pvt_val) if b]
+                else:
+                    filled[pvt_val] = 1
+                    indices = [pvt_val]
+                yield pvt_key, self.subset(indices)
+            # yield sub-summary for unfilled indices
+            if not all(filled):
+                indices = [i for i, b in enumerate(pvt_val) if not b]
+                yield defualt, self.subset(indices)
 
-        if key not in self._varying_elems:
-            raise KeyError
 
-        pvt_elem = self._varying_elems[key]
-        for pvt_key, pvt_val in six.iteritems(pvt_elem):
-
-            if isinstance(pvt_val, bitarray):
-                indices = [i for i, b in enumerate(pvt_val) if b]
-            else:
-                indices = [pvt_val]
-
-            summary = self.subset(indices)
-            yield pvt_key, summary
-
-
-    def group(self, keys):
+    def group(self, keys, defualt=None):
         """Generator that splits the summary into sub-summaries that share the
         same values for the given set of keys."""
         if len(keys) == 1:
-            for val, summary in self.split(keys[0]):
+            for val, summary in self.split(keys[0], defualt):
                 yield (val,), summary
         else:
-            for val, summary in self.split(keys[0]):
-                for grp_vals, grp_summary in summary.group(keys[1:]):
+            for val, summary in self.split(keys[0], defualt):
+                for grp_vals, grp_summary in summary.group(keys[1:], defualt):
                     yield (val,) + grp_vals, grp_summary
 
 
@@ -418,7 +419,6 @@ class ElementSummary(object):
         #TODO; better description
         """Find a set of elements whose values form a coordinate basis.
         """
-
         # filter guess_keys to only those that are possible
         possible = []
         for key in guess_keys:
@@ -1391,12 +1391,14 @@ class VaryingElement(collections.OrderedDict):
     #         return [val]
     #
     #
-    # def get(self, key, default=None):
-    #     """Get the positional indices for the key"""
-    #     if self.__contains__(key):
-    #         return self.__getitem__(key)
-    #     else:
-    #         return default
+    def where(self, key):
+        """Get the positional indices for the key"""
+        val = self.get(key)
+        if val is None:
+            return list()
+        if isinstance(val, bitarray):
+            return [i for i, b in enumerate(val) if b]
+        return [val]
 
 
     def which(self, idx, unfilled_key=None):
@@ -1411,7 +1413,7 @@ class VaryingElement(collections.OrderedDict):
             Value to return if there is no value associated with the index
         """
         if 0 > idx or idx >= self._size:
-            raise IndexError
+            raise IndexError("%d out of range [0, %d)" % (idx, self.size))
         for key, val in six.iteritems(super(VaryingElement, self)):
             if isinstance(val, bitarray):
                 if val[idx]:
