@@ -43,9 +43,9 @@ class ElementSummary(object):
 
     def __init__(self, compare_rules=None):
         if compare_rules is not None:
-            self._compare_rules = compare_rules
+            self.compare_rules = compare_rules
         else:
-            self._compare_rules = dict()
+            self.compare_rules = dict()
         self.clear()
 
 
@@ -98,6 +98,29 @@ class ElementSummary(object):
         return self._tags
 
 
+    def is_permutation(self, other):
+        # check equality of dimesions
+        if self.size != other.size:
+            return False
+        # check the set of keys are equal
+        if (self._const_elems.viewkeys() != other._const_elems.viewkeys() or
+            self._varying_elems.viewkeys() != other._varying_elems.viewkeys()):
+            return False
+        # compare constant elements
+        rules = self.compare_rules
+        if not all(rules(key, operator.eq)(val, other._const_elems[key])
+                   for key, val in six.iteritems(self._const_elems)):
+            return False
+        # find the mapping between the summaries
+        for key, this_elem in six.iteritems(self._varying_elems):
+            other_elem = other._varying_elems[key]
+            if not this_elem.are_keys_equal(other_elem):
+                return False
+            if len(this_elem) != len(other_elem):
+                return False
+        # compare varying elements
+
+
     def _unsafe_append(self, idx, data_dict, size):
         # This function is considered unsafe because it assumes that the varying
         # elements have been resized to accomidate append data at index 'idx',
@@ -119,7 +142,7 @@ class ElementSummary(object):
 
         for key, value in data_generator:
             # Retrieve the comparison function
-            cmp_func = self._compare_rules.get(key)
+            cmp_func = self.compare_rules.get(key)
 
             if key in self._const_elems:
                 const_val = self._const_elems[key]
@@ -845,6 +868,40 @@ class VaryingElement(collections.OrderedDict):
     #----------------------------------------------------------------------
     # logic functions
     #----------------------------------------------------------------------
+    def __contains__(self, key):
+        if self._cmp_func is None:
+            return super(VaryingElement, self).__contains__(key)
+        else:
+            return any(self._cmp_func(k, key) for k in six.iterkeys(self))
+
+
+    def __eq__(self, other):
+        if self._cmp_func is None:
+            # default to base __eq__ if there is no comparision function
+            return super(VaryingElement, self).__eq__(other)
+        else:
+            # quick dimension equality check
+            if len(self) != len(other) or self.size != other.size:
+                return False
+            try:
+                return all(val == self.__getitem__(key)
+                           for key, val in six.iteritems(other))
+            except KeyError:
+                return False
+
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+    def are_keys_equal(self, other):
+        if len(self) != len(other):
+            return False
+        if self._cmp_func is None:
+            return self.viewkeys() == other.viewkeys()
+        else:
+            return all(self.__contains__(key) for key in six.iterkeys(other))
+
 
     def is_empty(self):
         """Test if there are no indices mapped to a key"""
@@ -942,6 +999,32 @@ class VaryingElement(collections.OrderedDict):
     #----------------------------------------------------------------------
     # logic functions
     #----------------------------------------------------------------------
+    def permutation_to(self, other):
+        other2this = [0] * self.size
+        fill_count = 0
+        for key in six.iterkeys(self):
+            this_indices = self.where(key)
+            other_indices = other.where(key)
+            if len(other_indices) != len(this_indices):
+                return None
+            for other_idx, this_idx in zip(other_indices, this_indices):
+                other2this[other_idx] = this_idx
+            fill_count += len(this_indices)
+        # handle mapping for unfilled indices
+        if self.size == fill_count + 1:
+            # if there is a single unfilled index then VaryingElement.unfilled
+            # will that index
+            other2this[other.unfilled] = self.unfilled
+        elif fill_count != self.size:
+            # if there are multiple unfilled indices then
+            # VaryingElement.unfilled will return a bitarray
+            this_indices = [i for i, b in self.unfilled if b]
+            other_indices = [i for i, b in other.unfilled if b]
+            for other_idx, this_idx in zip(other_indices, this_indices):
+                other2this[other_idx] = this_idx
+        return other2this
+
+
 
     @property
     def unfilled(self):
@@ -1393,7 +1476,8 @@ class VaryingElement(collections.OrderedDict):
     #
     def where(self, key):
         """Get the positional indices for the key"""
-        val = self.get(key)
+        repr_key = self._find_repr_key(key)
+        val = self.get(repr_key)
         if val is None:
             return list()
         if isinstance(val, bitarray):

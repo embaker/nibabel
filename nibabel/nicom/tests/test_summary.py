@@ -620,6 +620,14 @@ def test_determine_variation():
 # DicomSummary tests
 #
 #===============================================================================
+def make_data_dict(vals, rkeys, ckeys, unfilled_value=None):
+    result = dict((ckey, dict()) for ckey in ckeys)
+    for rkey, row in zip(rkeys, vals):
+        for ckey, val in zip(ckeys, row):
+            if val != unfilled_value:
+                result[ckey][rkey] = val
+    return result
+
 class TestElementSummary(TestCase):
 
     def test_remove(self):
@@ -682,17 +690,26 @@ class TestElementSummary(TestCase):
 
     def test_split(self):
         parent = ElementSummary()
-        parent._tags = ['0','1','2','3','4','5','6']
-        parent._const_elems = {'1,2->c' : 5}
-
-        parent._varying_elems['key'] = \
-            VaryingElement.make_from_inverse([1, 1, 2, 2, 2, 1, 1])
-        parent._varying_elems['1,2->v'] = \
-            VaryingElement.make_from_inverse([3, 4, 3, 3, 4, 4, 3])
-        parent._varying_elems['1->_'] = \
-            VaryingElement.make_from_inverse([None, None, 1, 2, 2, None, None])
-        parent._varying_elems['2->_'] = \
-            VaryingElement.make_from_inverse([1, 1, None, None, None, 2, 2])
+        data = {'0' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 1},
+                '1' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 1},
+                '2' : {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 1},
+                '3' : {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 2},
+                '4' : {'1,2->c' : 5, 'key' : 2, '1,2->v' : 4, '1->_' : 2},
+                '5' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 2},
+                '6' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 2},
+                }
+        parent.extend(data)
+        # parent._tags = ['0','1','2','3','4','5','6']
+        # parent._const_elems = {'1,2->c' : 5}
+        #
+        # parent._varying_elems['key'] = \
+        #     VaryingElement.make_from_inverse([1, 1, 2, 2, 2, 1, 1])
+        # parent._varying_elems['1,2->v'] = \
+        #     VaryingElement.make_from_inverse([3, 4, 3, 3, 4, 4, 3])
+        # parent._varying_elems['1->_'] = \
+        #     VaryingElement.make_from_inverse([None, None, 1, 2, 2, None, None])
+        # parent._varying_elems['2->_'] = \
+        #     VaryingElement.make_from_inverse([1, 1, None, None, None, 2, 2])
 
         result = dict(item for item in parent.split('key'))
         assert_equal(2, len(result))
@@ -702,7 +719,7 @@ class TestElementSummary(TestCase):
         assert_equal(2, len(result[1]._varying_elems))
         assert_equal(5, result[1]._const_elems['1,2->c'])
         assert_equal(1, result[1]._const_elems['key'])
-        assert_equal(['0','1','5','6'], result[1]._tags)
+        assert_equal(set(['0','1','5','6']), set(result[1]._tags))
         assert_equal(
             VaryingElement.make_from_inverse([3, 4, 4, 3]),
             result[1]._varying_elems['1,2->v'])
@@ -903,13 +920,10 @@ class TestElementSummary(TestCase):
 
 
     def test_extend(self):
-
         inverses = {'a' : [0, 1, 1, 1, 0, 0],
                     'b' : [0, 0, 0, 0, 0, 0],
                     'c' : [1, 0, 2, 0, 2, 0],
                     'd' : [0, 1, 3, 2, 2, 2]}
-
-
         data_pairs = [{'a':0, 'b':0, 'c':1, 'd':0},
                       {'a':1, 'b':0, 'c':0, 'd':1},
                       {'a':1, 'b':0, 'c':2, 'd':3},
