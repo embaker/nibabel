@@ -60,14 +60,6 @@ class TestVaryingElement(TestCase):
         assert_false(1 in result)
 
 
-    def test__insert_empty_array(self):
-        result = VaryingElement(size=4)
-        result._insert_empty_array('a')
-        assert_equal(result['a'], bitarray('0000'))
-        result._insert_empty_array(None)
-        assert_equal(result[None], bitarray('0000'))
-
-
     def test__unassign_int(self):
         result = VaryingElement(size=6)
         result[1] = bitarray('011000')
@@ -313,6 +305,26 @@ class TestVaryingElement(TestCase):
         assert_equal(4, result[5])
 
 
+    def test_subset(self):
+        velem = VaryingElement.make_from_inverse([1, 3, 2, 1, 2, 3, 1])
+        selem = velem.subset([0, 2, 3, 4])
+        assert_equal([1, 2, 1, 2], selem.inverse())
+        # with unfilled values
+        velem = VaryingElement.make_from_inverse([1, 3, None, 1, None, 3, 1])
+        selem = velem.subset([0, 2, 3, 4])
+        assert_equal([1, None, 1, None], selem.inverse())
+        # empty subset
+        velem = VaryingElement.make_from_inverse([None, 3, None, 1, 0, 3, 1])
+        selem = velem.subset([0, 2])
+        assert_equal([None, None], selem.inverse())
+        assert_true(selem.is_empty())
+        # constant subset
+        velem = VaryingElement.make_from_inverse([1, 3, 2, 1, 2, 3, 1])
+        selem = velem.subset([0, 3, 6])
+        assert_equal([1, 1, 1], selem.inverse())
+        assert_true(selem.is_constant())
+
+
     def test_insert(self):
         result = VaryingElement(size=4)
         result['a'] = bitarray('0011')
@@ -369,7 +381,7 @@ class TestVaryingElement(TestCase):
         assert_equal(result[1], 0)
 
 
-    def testt_clean(self):
+    def test_clean(self):
         result = VaryingElement(size=5)
         result._unsafe_set('a', bitarray('01010'))
         result._unsafe_set('b', bitarray('00100'))
@@ -554,6 +566,55 @@ class TestVaryingElement(TestCase):
         assert_true(v3[1].is_complementary(v3[0]))
 
 
+    def test_is_permutation(self):
+        # test 1-to-1 mapping
+        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd'])
+        velem2 = VaryingElement.make_from_inverse(['b', 'd', 'c', 'a'])
+        # any permutation
+        assert_true(velem1.is_permutation(velem2))
+        # specific permutation
+        assert_true(velem1.is_permutation(velem2, [1, 3, 2, 0]))
+        assert_false(velem1.is_permutation(velem2, [1, 3, 0, 2]))
+        # test unfilled
+        velem1 = VaryingElement.make_from_inverse(['a', None, 'c', 'd'])
+        velem2 = VaryingElement.make_from_inverse([None, 'd', 'c', 'a'])
+        # any permutation
+        assert_true(velem1.is_permutation(velem2))
+        # specific permutation
+        assert_true(velem1.is_permutation(velem2, [1, 3, 2, 0]))
+        assert_false(velem1.is_permutation(velem2, [1, 3, 0, 2]))
+        # test 2-to-1 mapping
+        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'b', 'c'])
+        velem2 = VaryingElement.make_from_inverse(['b', 'c', 'b', 'a'])
+        # any permutation
+        assert_true(velem1.is_permutation(velem2))
+        # specific permutation
+        assert_true(velem1.is_permutation(velem2, [1, 3, 2, 0]))
+        assert_true(velem1.is_permutation(velem2, [2, 3, 1, 0]))
+        assert_false(velem1.is_permutation(velem2, [1, 3, 0, 2]))
+
+
+    def test_find_permutation(self):
+        # test 1-to-1 mapping
+        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd'])
+        velem2 = VaryingElement.make_from_inverse(['b', 'd', 'c', 'a'])
+        assert_equal(velem1.find_permutation(velem2), [1, 3, 2, 0])
+        # test unfilled
+        velem1 = VaryingElement.make_from_inverse(['a', None, 'c', 'd'])
+        velem2 = VaryingElement.make_from_inverse([None, 'd', 'c', 'a'])
+        assert_equal(velem1.find_permutation(velem2), [1, 3, 2, 0])
+        # test 2-to-1 mapping
+        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'b', 'c'])
+        velem2 = VaryingElement.make_from_inverse(['b', 'c', 'b', 'a'])
+        result_2to1 = velem1.find_permutation(velem2)
+        assert_true(result_2to1 == [1, 3, 2, 0] or
+                    result_2to1 == [2, 3, 1, 0])
+        # test no permutation
+        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd'])
+        velem2 = VaryingElement.make_from_inverse(['b', 'e', 'c', 'a'])
+        assert_true(velem1.find_permutation(velem2) is None)
+
+
 #===============================================================================
 #
 # other
@@ -690,14 +751,14 @@ class TestElementSummary(TestCase):
 
     def test_split(self):
         parent = ElementSummary()
-        data = {'0' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 1},
-                '1' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 1},
-                '2' : {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 1},
-                '3' : {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 2},
-                '4' : {'1,2->c' : 5, 'key' : 2, '1,2->v' : 4, '1->_' : 2},
-                '5' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 2},
-                '6' : {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 2},
-                }
+        data = [('0', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 1}),
+                ('1', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 1}),
+                ('2', {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 1}),
+                ('3', {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 2}),
+                ('4', {'1,2->c' : 5, 'key' : 2, '1,2->v' : 4, '1->_' : 2}),
+                ('5', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 2}),
+                ('6', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 2}),
+                ]
         parent.extend(data)
         # parent._tags = ['0','1','2','3','4','5','6']
         # parent._const_elems = {'1,2->c' : 5}
@@ -728,6 +789,7 @@ class TestElementSummary(TestCase):
             result[1]._varying_elems['2->_'])
 
         assert_true(2 in result)
+        print result[2]._const_elems.keys()
         assert_equal(2, len(result[2]._const_elems))
         assert_equal(2, len(result[2]._varying_elems))
         assert_equal(5, result[2]._const_elems['1,2->c'])
@@ -874,7 +936,8 @@ class TestElementSummary(TestCase):
 
         names = axes_names + ('a', 'b', 'c')
         values = axes_data + (a, b, c)
-        data = [(i, dict(zip(names, val))) for i, val in enumerate(zip(*values))]
+        data = [(i, dict(zip(names, val)))
+                for i, val in enumerate(zip(*values))]
         random.shuffle(data)
 
         summary = ElementSummary()
@@ -923,22 +986,33 @@ class TestElementSummary(TestCase):
         inverses = {'a' : [0, 1, 1, 1, 0, 0],
                     'b' : [0, 0, 0, 0, 0, 0],
                     'c' : [1, 0, 2, 0, 2, 0],
-                    'd' : [0, 1, 3, 2, 2, 2]}
-        data_pairs = [{'a':0, 'b':0, 'c':1, 'd':0},
-                      {'a':1, 'b':0, 'c':0, 'd':1},
-                      {'a':1, 'b':0, 'c':2, 'd':3},
-                      {'a':1, 'b':0, 'c':0, 'd':2},
-                      {'a':0, 'b':0, 'c':2, 'd':2},
-                      {'a':0, 'b':0, 'c':0, 'd':2}]
+                    'd' : [0, 1, 3, 2, 2, 2],
+                    'e' : [1, 1, None, None, None, 1],
+                    'f' : [None, None, 1, 2, 1, None]}
+        data_pairs = [{'a':0, 'b':0, 'c':1, 'd':0, 'e':1},
+                      {'a':1, 'b':0, 'c':0, 'd':1, 'e':1},
+                      {'a':1, 'b':0, 'c':2, 'd':3, 'f':1},
+                      {'a':1, 'b':0, 'c':0, 'd':2, 'f':2},
+                      {'a':0, 'b':0, 'c':2, 'd':2, 'f':1},
+                      {'a':0, 'b':0, 'c':0, 'd':2, 'e':1}]
         data_pairs = zip(range(len(data_pairs)), data_pairs)
 
         summary = ElementSummary()
         summary.extend(data_pairs)
-
+        # test constant elems
         assert_equal(set(summary._const_elems.keys()), {'b'})
         assert_equal(summary['b'], 0)
-
-        assert_equal(set(summary._varying_elems.keys()), {'a', 'c', 'd'})
-        assert_equal(summary['a'], VaryingElement.make_from_inverse(inverses['a']))
-        assert_equal(summary['c'], VaryingElement.make_from_inverse(inverses['c']))
-        assert_equal(summary['d'], VaryingElement.make_from_inverse(inverses['d']))
+        # test varying elements
+        assert_equal(set(summary._varying_elems.keys()), {'a','c','d','e','f'})
+        assert_equal(summary['a'],
+                     VaryingElement.make_from_inverse(inverses['a']))
+        assert_equal(summary['c'],
+                     VaryingElement.make_from_inverse(inverses['c']))
+        assert_equal(summary['d'],
+                     VaryingElement.make_from_inverse(inverses['d']))
+        assert_equal(summary['a'],
+                     VaryingElement.make_from_inverse(inverses['a']))
+        assert_equal(summary['e'],
+                     VaryingElement.make_from_inverse(inverses['e']))
+        assert_equal(summary['f'],
+                     VaryingElement.make_from_inverse(inverses['f']))

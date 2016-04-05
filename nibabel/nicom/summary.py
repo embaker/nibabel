@@ -99,10 +99,13 @@ class ElementSummary(object):
 
 
     def is_permutation(self, other):
+        """Test if the contents of this object are just a reordering of the
+        contents of 'other'
+        """
         # check equality of dimesions
         if self.size != other.size:
             return False
-        # check the set of keys are equal
+        # check that the set of keys are the same
         if (self._const_elems.viewkeys() != other._const_elems.viewkeys() or
             self._varying_elems.viewkeys() != other._varying_elems.viewkeys()):
             return False
@@ -111,14 +114,30 @@ class ElementSummary(object):
         if not all(rules(key, operator.eq)(val, other._const_elems[key])
                    for key, val in six.iteritems(self._const_elems)):
             return False
-        # find the mapping between the summaries
+        # find the strictist mapping between the summaries
+        min_deg_of_free = self.size
+        for key, this_elem in six.iteritems(self._varying_elems):
+            # the number of degrees of freedom that a mapping based on this
+            # element will have
+            cur_deg_of_free = this_elem.size - len(this_elem)
+            # use mapping if it stricter than current strictest mapping
+            if cur_deg_of_free < min_deg_of_free:
+                min_deg_of_free = cur_deg_of_free
+                # get the mapping
+                other_elem = other._varying_elems[key]
+                other2this = this_elem.find_permutation(other_elem)
+                # there is no mapping, therefore summaries are not permutations
+                if other2this is None:
+                    return False
+                # break if we have found the strictest mapping that we can
+                if min_deg_of_free <= 1:
+                    break
+        # compare varying elements are the same under the found mapping
         for key, this_elem in six.iteritems(self._varying_elems):
             other_elem = other._varying_elems[key]
-            if not this_elem.are_keys_equal(other_elem):
+            if not this_elem.is_permutation(other_elem, other2this):
                 return False
-            if len(this_elem) != len(other_elem):
-                return False
-        # compare varying elements
+        return True
 
 
     def _unsafe_append(self, idx, data_dict, size):
@@ -140,15 +159,20 @@ class ElementSummary(object):
         else:
             data_generator = data_dict
 
+        # keep track of visited constant keys, not visited constant keys need
+        # to be moved to varying elements
+        unvisited_const_keys = set(self._const_elems.keys())
+
         for key, value in data_generator:
             # Retrieve the comparison function
             cmp_func = self.compare_rules.get(key)
 
             if key in self._const_elems:
+                unvisited_const_keys.discard(key)
                 const_val = self._const_elems[key]
                 cmp_rep = operator.eq if cmp_func is None else cmp_func
                 if not cmp_rep(const_val, value):
-                    # The element is not const, move it to the varying
+                    # The element is no longer const, move it to the varying
                     var_elem = VaryingElement(size=size, cmp_func=cmp_func)
                     var_elem[const_val] = slice(0, idx, 1)
                     var_elem._unsafe_assign_int(value, idx)
@@ -166,6 +190,14 @@ class ElementSummary(object):
                 var_elem = VaryingElement(size=size, cmp_func=cmp_func)
                 var_elem[value] = idx
                 self._varying_elems[key] = var_elem
+
+        # move unvisited constant elements to varying
+        for key in unvisited_const_keys:
+            var_elem = VaryingElement(size=size,
+                                      cmp_func=self.compare_rules.get(key))
+            var_elem[self._const_elems[key]] = slice(0, idx, 1)
+            self._varying_elems[key] = var_elem
+            del self._const_elems[key]
 
 
     def append(self, tag, data):
@@ -300,21 +332,21 @@ class ElementSummary(object):
 
         # keys that are only in other.const_elems
         for key in other_const:
-            cmp_func = self._compare_rules.get(key)
+            cmp_func = self.compare_rules.get(key)
             var_elem = VaryingElement(size=n_new, cmp_func=cmp_func)
             var_elem[other._const_elems[key]] = slice(n_old, n_new)
             self._varying_elems[key] = var_elem
 
         # keys that are only in other.varying_elems
         for key in other_vary:
-            cmp_func = self._compare_rules.get(key)
+            cmp_func = self.compare_rules.get(key)
             var_elem = VaryingElement(size=n_old, cmp_func=cmp_func)
             var_elem.extend(other._varying_elems[key])
             self._varying_elems[key] = var_elem
 
         # keys that are only in self.const_elems
         for key in this_const:
-            cmp_func = self._compare_rules.get(key)
+            cmp_func = self.compare_rules.get(key)
             var_elem = VaryingElement(size=n_new, cmp_func=cmp_func)
             var_elem[self._const_elems[key]] = slice(0, n_old)
             self._varying_elems[key] = var_elem
@@ -333,7 +365,7 @@ class ElementSummary(object):
 
         # intersection of constant elements
         for key in this_const_other_const:
-            cmp_func = self._compare_rules.get(key)
+            cmp_func = self.compare_rules.get(key)
             cmp_rep = operator.eq if cmp_func is None else cmp_func
             if not cmp_rep(self._const_elems[key], other._const_elems[key]):
                 var_elem = VaryingElement(size=n_new, cmp_func=cmp_func)
@@ -350,7 +382,7 @@ class ElementSummary(object):
 
         # intersection of self.const_elems and other.varying_elems
         for key in this_const_other_vary:
-            cmp_func = self._compare_rules.get(key)
+            cmp_func = self.compare_rules.get(key)
             if overlaping:
                 other_elem = other._varying_elems[key].subset(indices)
                 if other_elem.is_constant():
@@ -370,7 +402,7 @@ class ElementSummary(object):
 
 
     def subset(self, indices):
-        result = ElementSummary(compare_rules=self._compare_rules)
+        result = ElementSummary(compare_rules=self.compare_rules)
 
         # return empty ElementSummary if there are no indices to fill it with
         if len(indices) == 0:
@@ -850,33 +882,30 @@ class VaryingElement(collections.OrderedDict):
             raise ValueError
 
 
-    def _insert_empty_array(self, key):
-        new_array = bitarray(self._size)
-        new_array.setall(0)
-        self._unsafe_set(key, new_array)
-
-
-    def _convert_to_array(self, key):
-        prev_val = super(VaryingElement, self).get(key)
-        if prev_val is None:
-            self._insert_empty_array(key)
-        elif isinstance(prev_val, (int, long)):
-            self._insert_empty_array(key)
-            super(VaryingElement, self).__getitem__(key)[prev_val] = 1
-        return super(VaryingElement, self).get(key)
+    def _convert_to_array(self, repr_key):
+        prev_val = super(VaryingElement, self).get(repr_key)
+        if isinstance(prev_val, bitarray):
+            return prev_val
+        else:
+            new_val = bitarray(self.size)
+            new_val.setall(0)
+            if isinstance(prev_val, Integral):
+                new_val[prev_val] = 1
+            self._unsafe_set(repr_key, new_val)
+            return new_val
 
     #----------------------------------------------------------------------
     # logic functions
     #----------------------------------------------------------------------
     def __contains__(self, key):
-        if self._cmp_func is None:
+        if self.cmp_func is None:
             return super(VaryingElement, self).__contains__(key)
         else:
-            return any(self._cmp_func(k, key) for k in six.iterkeys(self))
+            return any(self.cmp_func(k, key) for k in six.iterkeys(self))
 
 
     def __eq__(self, other):
-        if self._cmp_func is None:
+        if self.cmp_func is None:
             # default to base __eq__ if there is no comparision function
             return super(VaryingElement, self).__eq__(other)
         else:
@@ -897,7 +926,7 @@ class VaryingElement(collections.OrderedDict):
     def are_keys_equal(self, other):
         if len(self) != len(other):
             return False
-        if self._cmp_func is None:
+        if self.cmp_func is None:
             return self.viewkeys() == other.viewkeys()
         else:
             return all(self.__contains__(key) for key in six.iterkeys(other))
@@ -996,10 +1025,40 @@ class VaryingElement(collections.OrderedDict):
         return True
 
 
+    def is_permutation(self, other, other2this=None):
+        """Test
+        """
+        # quick check is permuation is possible
+        if len(self) != len(other):
+            return False
+        # thorough check if a permuation
+        if other2this is not None:
+            # check for specific permutation
+            for key in six.iterkeys(self):
+                this_indices = set(self.where(key))
+                other_indices = set(other2this[i] for i in other.where(key))
+                if this_indices != other_indices:
+                    return False
+        else:
+            # check for any permutation
+            for key in six.iterkeys(self):
+                this_indices = self.where(key)
+                other_indices = other.where(key)
+                if len(this_indices) != len(other_indices):
+                    return False
+        return True
+
     #----------------------------------------------------------------------
     # logic functions
     #----------------------------------------------------------------------
-    def permutation_to(self, other):
+
+    def find_permutation(self, other):
+        """Determine the reordering of this VaryingElement that would cause it
+        to be the same as the VaryingElement 'other'.
+
+        Returns
+        -------
+        """
         other2this = [0] * self.size
         fill_count = 0
         for key in six.iterkeys(self):
@@ -1023,7 +1082,6 @@ class VaryingElement(collections.OrderedDict):
             for other_idx, this_idx in zip(other_indices, this_indices):
                 other2this[other_idx] = this_idx
         return other2this
-
 
 
     @property
@@ -1318,14 +1376,11 @@ class VaryingElement(collections.OrderedDict):
         [2, 4]
         """
         out = klass(size=len(inv), cmp_func=cmp_func)
-        for idx, val in enumerate(inv):
-            if val == unfilled_key:
+        for idx, key in enumerate(inv):
+            if key == unfilled_key:
                 continue
-            elif val in out:
-                out._convert_to_array(val)
-                out[val][idx] = 1
-            else:
-                out[val] = idx
+            repr_key = out._find_repr_key(key)
+            out._unsafe_assign_int(repr_key, idx)
         return out
 
 
