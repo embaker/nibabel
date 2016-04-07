@@ -9,6 +9,27 @@ from copy import deepcopy
 from numbers import Integral
 
 
+#===============================================================================
+#  Utility functions for working with bitarrays in the context of how they are
+#  utilized in this module.
+#===============================================================================
+
+def zeros_bitarray(size):
+    """Create a bitarray of filled with 0s.
+    """
+    barray = bitarray(size)
+    barray.setall(0)
+    return barray
+
+
+def ones_bitarray(size):
+    """Create a bitarray of filled with 1s.
+    """
+    barray = bitarray(size)
+    barray.setall(1)
+    return barray
+
+
 def slice_to_bitarray(slc, size):
     """Creates a bitarray and sets the bits to 1 for the indices given by a
     slice.
@@ -29,15 +50,42 @@ def iterable_to_bitarray(itr, size):
         barray[i] = 1
     return barray
 
+
+def integer_to_bitarray(idx, size):
+    """Create a bitarray with a single bit set at the given index.
+    """
+    barray = bitarray(size)
+    barray.setall(0)
+    barray[idx] = 1
+    return barray
+
+
+def as_bitarray(x, size):
+    """Convert object to bitarray if neccessary, otherwise return object itself
+    if it is already a bitarray.
+    """
+    if isinstance(x, bitarray):
+        return x
+    elif isinstance(x, Integral):
+        return integer_to_bitarray(x, size)
+    elif isinstance(x, slice):
+        return slice_to_bitarray(x, size)
+    elif isinstance(s, colletions.Iterable):
+        return iterable_to_bitarray(s, size)
+    else:
+        raise TypeError
+
+
+def bitarray_to_indices(barray, start=0):
+    """Return the indices of the set bits in the bitarray.
+    """
+    return tuple(i for i, b in enumerate(barray, start) if b)
+
 #===============================================================================
 #
 #
 #
 #===============================================================================
-class TagCollisionError(Exception):
-    pass
-
-
 class ElementSummary(object):
     """ Summary of the attributes of multiple DICOM files """
 
@@ -48,21 +96,79 @@ class ElementSummary(object):
             self.compare_rules = dict()
         self.clear()
 
+    @classmethod
+    def make_from_inverses(klass, data, unfilled_value=None, compare_rules=None):
+        """
+
+        Example
+        -------
+        >>> data = [('a', [1, 2, 1]), ('b', [3, 3, 3])]
+        >>> summary = ElementSummary.make_from_inverses(data)
+        """
+
+        result = ElementSummary(compare_rules=compare_rules)
+
+        # convience conversion to allow for sequence of pairs or dictionaries
+        if isinstance(data, dict):
+            data_iterator = six.iteritems(data)
+        else:
+            data_iterator = data
+
+        size = None
+        for key, values in data_iterator:
+            # assure the length all values is the same
+            if size is None:
+                size = len(values)
+            elif len(values) != size:
+                raise ValueError
+            # create varying element for key
+            cmp_func = None if compare_rules is None else compare_rules.get(key)
+            elem = VaryingElement.make_from_inverse(values,
+                                                    unfilled_key=unfilled_value,
+                                                    cmp_func=cmp_func)
+            # determine how values vary
+            if elem.is_empty():
+                # if completely unfilled, then do not add
+                continue
+            elif elem.is_constant():
+                # if constant, then add key and value to constant dict
+                result._const_elems[key], _ = elem.popitem()
+            else:
+                # if varying then add to varying dict
+                result._varying_elems[key] = elem
+        # set size
+        result._size = size
+        return result
 
     @property
     def size(self):
-        return len(self._tags)
+        return self._size
+
+
+    def __eq__(self, other):
+        return (self._const_elems == other._const_elems and
+                self._varying_elems == other._varying_elems)
+
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
     def __len__(self):
-        return len(self._const_elems) + len(self._varying_elems )
+        return len(self._const_elems) + len(self._varying_elems)
 
 
     def clear(self):
         """Empty the internal data structures"""
-        self._tags = tuple()
+        self._size = 0
         self._const_elems = dict()
         self._varying_elems = dict()
+
+
+    def resize(self, size):
+        self._size = size
+        for var_elem in six.itervalues(self._varying_elems):
+            var_elem.resize(size)
 
 
     def __contains__(self, key):
@@ -85,17 +191,12 @@ class ElementSummary(object):
         raise KeyError
 
 
-    def get(self, key, defualt=None):
+    def get(self, key, default=None):
         if key in self._const_elems:
             return self._const_elems[key]
         if key in self._varying_elems:
             return self._varying_elems[key]
         return default
-
-
-    @property
-    def tags(self):
-        return self._tags
 
 
     def is_permutation(self, other):
@@ -140,24 +241,25 @@ class ElementSummary(object):
         return True
 
 
-    def _unsafe_append(self, idx, data_dict, size):
-        # This function is considered unsafe because it assumes that the varying
-        # elements have been resized to accomidate append data at index 'idx',
-        # and it assumes that that it is being called with consecutive indices
+    def _unsafe_append_single(self, idx, data):
+        # this function is considered unsafe because changing the sizes of the
+        # varying elements to accommodate the inserted data must be done
+        # externally.
 
         # all elements are constant if this the first dict
         if idx == 0:
-            if isinstance(data_dict, dict):
-                self._const_elems = deepcopy(data_dict)
+            if isinstance(data, dict):
+                self._const_elems = deepcopy(data)
             else:
-                self._const_elems = dict(data_dict)
+                for key, value in data:
+                    self._const_elems[key] = value
             return
 
         # convenience coversion for dictionaries
-        if isinstance(data_dict, dict):
-            data_generator = six.iteritems(data_dict)
+        if isinstance(data, dict):
+            data_generator = six.iteritems(data)
         else:
-            data_generator = data_dict
+            data_generator = data
 
         # keep track of visited constant keys, not visited constant keys need
         # to be moved to varying elements
@@ -173,7 +275,7 @@ class ElementSummary(object):
                 cmp_rep = operator.eq if cmp_func is None else cmp_func
                 if not cmp_rep(const_val, value):
                     # The element is no longer const, move it to the varying
-                    var_elem = VaryingElement(size=size, cmp_func=cmp_func)
+                    var_elem = VaryingElement(size=self.size, cmp_func=cmp_func)
                     var_elem[const_val] = slice(0, idx, 1)
                     var_elem._unsafe_assign_int(value, idx)
                     self._varying_elems[key] = var_elem
@@ -187,130 +289,30 @@ class ElementSummary(object):
             else:
                 # Haven't seen this key before, add to varying_elems
                 # because missing values are not considered const
-                var_elem = VaryingElement(size=size, cmp_func=cmp_func)
+                var_elem = VaryingElement(size=self.size, cmp_func=cmp_func)
                 var_elem[value] = idx
                 self._varying_elems[key] = var_elem
 
         # move unvisited constant elements to varying
         for key in unvisited_const_keys:
-            var_elem = VaryingElement(size=size,
+            var_elem = VaryingElement(size=self.size,
                                       cmp_func=self.compare_rules.get(key))
             var_elem[self._const_elems[key]] = slice(0, idx, 1)
             self._varying_elems[key] = var_elem
             del self._const_elems[key]
 
 
-    def append(self, tag, data):
-        # assure no duplicates
-        if tag in self._tags:
-            raise TagCollisionError
-
-        old_size = self.size
-        new_size = old_size + 1
-        for var_elem in six.iteritems(self._varying_elems):
-            var_elem.resize(new_size)
-        self._unsafe_append(old_size, data, new_size)
-        self._tags += (tag,)
-
-
-    def extend(self, tag_data_pairs, guess_size=None):
-
-        chunk_size = 8
-
-        old_size = self.size
-
-        if guess_size is None:
-            if hasattr(tag_data_pairs, '__len__'):
-                guess_size = len(tag_data_pairs)
-            else:
-                # will cause the size to be increased to the next largest
-                # multiple of chunk_size
-                guess_size = chunk_size - (old_size % chunk_size)
-
-        # increase size to allow for new data to be added
-        max_size = old_size + guess_size
-        for var_elem in six.iteritems(self._varying_elems):
-            var_elem.resize(max_size)
-
-        # convenience conversion to iterator for dictionaries
-        if isinstance(tag_data_pairs, dict):
-            pair_iterator = six.iteritems(tag_data_pairs)
+    def _unsafe_append_summary(self, idx, other):
+        # extensively used structures
+        if other.size == 1:
+            new_part = idx
         else:
-            pair_iterator = tag_data_pairs
+            new_part = slice_to_bitarray(slice(idx, idx+other.size), self.size)
 
-        try:
-            for idx, (tag, data) in enumerate(pair_iterator, old_size):
-                # assure no duplicates
-                if tag in self._tags:
-                    raise TagCollisionError
-
-                # increase the varying elements' sizes when more space is needed
-                if idx >= max_size:
-                    max_size += chunk_size
-                    for var_elem in six.itervalues(self._varying_elems):
-                        var_elem.resize(max_size)
-
-                self._tags += (tag,)
-                self._unsafe_append(idx, data, max_size)
-
-        except TagCollisionError:
-            # if a duplicate tag has been found, revert to the prior state
-            self._tags = self._tags[:old_size]
-            for var_elem in six.itervalues(self._varying_elems):
-                var_elem.resize(old_size)
-            raise
-
-        # shrink the varying elements' sizes to the true size if neccessary
-        if max_size != self.size:
-            for var_elem in six.itervalues(self._varying_elems):
-                var_elem.resize(self.size)
-
-
-    def remove(self, tags):
-        """ Remove the given tags from the summary """
-
-        # index of tags to keep
-        kept_indices = [i for i, tag in enumerate(self._tags)
-                        if tag not in tags]
-
-        # return if there are no tags to remove
-        if len(kept_indices) == len(self._tags):
-            return
-
-        # removing the given tags from self._tags
-        self._tags = [self._tags[i] for i in kept_indices]
-
-        # remove indices from all the varying elements
-        del_keys = []
-        for key, var_elem in six.iteritems(self._varying_elems):
-            var_elem.reduce(kept_indices)
-            if var_elem.is_empty():
-                del_keys.append(key)
-            elif var_elem.is_constant():
-                self._const_elems[key], _ = var_elem.popitem()
-                del_keys.append(key)
-
-        # delete elements that are no longer varying
-        for key in del_keys:
-            del self._varying_elems[key]
-
-
-    def merge(self, other):
-        """ Merge the summary 'other' into this summary """
-
-        # length of self._tags before merge
-        n_old = len(self._tags)
-
-        tags_overlap = set(self._tags) & set(other._tags)
-        overlaping = (len(tags_overlap) == 0)
-        if overlaping:
-            indices = [i for i, tag in enumerate(other._tags)
-                       if tag not in tags_overlap]
-            self._tags.extend([other._tags[i] for i in indices])
-            n_new = n_old + len(indices)
+        if idx == 1:
+            old_part = 0
         else:
-            self._tags.extend(other._tags)
-            n_new = n_old + len(other._tags)
+            old_part = slice_to_bitarray(slice(0, idx), self.size)
 
         # creating the 8 possible key set combinations
         other_const = set(other._const_elems.keys())
@@ -332,83 +334,157 @@ class ElementSummary(object):
 
         # keys that are only in other.const_elems
         for key in other_const:
-            cmp_func = self.compare_rules.get(key)
-            var_elem = VaryingElement(size=n_new, cmp_func=cmp_func)
-            var_elem[other._const_elems[key]] = slice(n_old, n_new)
+            var_elem = VaryingElement(size=self.size,
+                                      cmp_func=self.compare_rules.get(key))
+            var_elem._unsafe_set(other._const_elems[key], new_part.copy())
             self._varying_elems[key] = var_elem
 
         # keys that are only in other.varying_elems
         for key in other_vary:
-            cmp_func = self.compare_rules.get(key)
-            var_elem = VaryingElement(size=n_old, cmp_func=cmp_func)
+            var_elem = VaryingElement(size=idx,
+                                      cmp_func=self.compare_rules.get(key))
             var_elem.extend(other._varying_elems[key])
+            if var_elem.size != self.size:
+                var_elem.resize(self.size)
             self._varying_elems[key] = var_elem
 
         # keys that are only in self.const_elems
         for key in this_const:
-            cmp_func = self.compare_rules.get(key)
-            var_elem = VaryingElement(size=n_new, cmp_func=cmp_func)
-            var_elem[self._const_elems[key]] = slice(0, n_old)
+            var_elem = VaryingElement(size=self.size,
+                                      cmp_func=self.compare_rules.get(key))
+            var_elem._unsafe_set(self._const_elems[key], old_part.copy())
             self._varying_elems[key] = var_elem
             del self._const_elems[key]
 
-        # keys that are only in self.varying_elems
-        for key in this_vary:
-            self._varying_elems[key].resize(n_new)
+        # intersection of self.const_elems and other.varying_elems
+        for key in this_const_other_vary:
+            var_elem = VaryingElement(size=self.size,
+                                      cmp_func=self.compare_rules.get(key))
+            var_elem._unsafe_set(self._const_elems[key], old_part.copy())
+            self._varying_elems[key] = var_elem
+            del self._const_elems[key]
 
         # intersection of varying elements
-        for key in this_vary_other_vary:
+        wrk_array = bitarray(self.size)
+        for key in this_vary_other_vary | this_const_other_vary:
             other_elem = other._varying_elems[key]
-            if overlaping:
-                other_elem = other_elem.subset(indices)
-            self._varying_elems[key].extend(other_elem)
+            this_elem = self._varying_elems[key]
+            for other_key, other_val in six.iteritems(other_elem):
+                repr_key = this_elem._find_repr_key(other_key)
+                if isinstance(other_val, bitarray):
+                    wrk_array.setall(0)
+                    wrk_array[idx : idx + other.size] = other_val
+                    this_elem._unsafe_assign_bitarray(repr_key, wrk_array)
+                else:
+                    this_elem._unsafe_assign_int(repr_key, idx + other_val)
 
         # intersection of constant elements
         for key in this_const_other_const:
             cmp_func = self.compare_rules.get(key)
             cmp_rep = operator.eq if cmp_func is None else cmp_func
             if not cmp_rep(self._const_elems[key], other._const_elems[key]):
-                var_elem = VaryingElement(size=n_new, cmp_func=cmp_func)
-                var_elem[self._const_elems[key]] = slice(0, n_old)
-                var_elem[other._const_elems[key]] = slice(n_old, n_new)
+                var_elem = VaryingElement(size=self.size, cmp_func=cmp_func)
+                var_elem._unsafe_set(self._const_elems[key], old_part.copy())
+                var_elem._unsafe_set(other._const_elems[key], new_part.copy())
                 self._varying_elems[key] = var_elem
                 del self._const_elems[key]
 
         # intersection of self.varying_elems and other.const_elems
         for key in this_vary_other_const:
             var_elem = self._varying_elems[key]
-            var_elem.resize(n_new)
-            var_elem[other._const_elems[key]] = slice(n_old, n_new)
+            repr_key = var_elem._find_repr_key(other._const_elems[key])
+            var_elem._unsafe_assign_bitarray(repr_key, new_part.copy())
 
-        # intersection of self.const_elems and other.varying_elems
-        for key in this_const_other_vary:
-            cmp_func = self.compare_rules.get(key)
-            if overlaping:
-                other_elem = other._varying_elems[key].subset(indices)
-                if other_elem.is_constant():
-                    other_val = iter(other_elem).next()
-                    cmp_rep = operator.eq if cmp_func is None else cmp_func
-                    if cmp_rep(self._const_elems[key], other_val):
-                        # still constant, continue
-                        continue
+
+    def append(self, data):
+        idx = self.size
+        if not isinstance(data, ElementSummary):
+            # append regular sequence
+            self.resize(self.size + 1)
+            self._unsafe_append_single(idx, data)
+        elif data.size > 0:
+            # append ElementSummary if it is not empty
+            self.resize(self.size + data.size)
+            self._unsafe_append_summary(idx, data)
+
+
+    def extend(self, data_seq, guess_size=None):
+
+        # amount by which to increment the size to reduce the amount of
+        # resizing
+        chunk_size = 8
+
+        # loading of default guess_size
+        if guess_size is None:
+            if hasattr(data_seq, '__len__'):
+                guess_size = len(data_seq)
             else:
-                other_elem = other._varying_elems[key]
+                # will cause the size to be increased to the next largest
+                # multiple of chunk_size
+                guess_size = chunk_size - (self.size % chunk_size)
 
-            var_elem = VaryingElement(size=n_old, cmp_func=cmp_func)
-            var_elem[self._const_elems[key]] = slice(0, n_old)
-            var_elem.extend(other_elem)
-            self._varying_elems[key] = var_elem
-            del self._const_elems[key]
+        # uesd to keep track of at what index the data is currently being
+        # inserted at and what the final size is
+        cur_idx = self.size
+        # increase size to allow for new data to be added
+        self.resize(self.size + guess_size)
+
+        for data in data_seq:
+            if isinstance(data, ElementSummary):
+                req_size = data.size + cur_idx
+                # increase the varying elements' sizes when more space
+                # is needed
+                if req_size > self.size:
+                    # find next largest size that falls on chunck_size
+                    new_size = req_size + chunk_size - (req_size % chunk_size)
+                    self.resize(new_size)
+                # append data
+                self._unsafe_append_summary(cur_idx, data)
+                # increment current index
+                cur_idx += data.size
+            else:
+                # increase the varying elements' sizes when more space
+                # is needed
+                if cur_idx >= self.size:
+                    self.resize(self.size + chunk_size)
+                # append data
+                self._unsafe_append_single(cur_idx, data)
+                # increment current index
+                cur_idx += 1
+
+        # shrink the varying elements' sizes to the true size if neccessary
+        if cur_idx != self.size:
+            self.resize(cur_idx)
+
+
+    def reduce(self, indices):
+        # remove indices from all the varying elements
+        del_keys = []
+        for key, var_elem in six.iteritems(self._varying_elems):
+            # reduce the varying element
+            var_elem.reduce(indices)
+            # ghandle elements that are not still varying
+            if var_elem.is_empty():
+                del_keys.append(key)
+            elif var_elem.is_constant():
+                self._const_elems[key], _ = var_elem.popitem()
+                del_keys.append(key)
+        # delete elements that are no longer varying
+        for key in del_keys:
+            del self._varying_elems[key]
+
+
+    def remove(self, indices):
+        """ Remove the given indices from the summary """
+        self.reduce([i for i in range(self.size) if i not in indices])
 
 
     def subset(self, indices):
         result = ElementSummary(compare_rules=self.compare_rules)
-
         # return empty ElementSummary if there are no indices to fill it with
         if len(indices) == 0:
             return result
 
-        result._tags = [self._tags[i] for i in indices]
         result._const_elems = self._const_elems.copy()
 
         if len(indices) > 1:
@@ -427,47 +503,61 @@ class ElementSummary(object):
             # if there is a single index, then all elements are constant
             idx = indices[0]
             for key, var_elem in six.iteritems(self._varying_elems):
-                result._const_elems[key] = var_elem.which(idx)
+                try:
+                    result._const_elems[key] = var_elem.at(idx)
+                except KeyError:
+                    # index is unfilled for key, do not add to subset
+                    continue
 
         return result
 
 
-    def split(self, key, defualt=None):
-        """Generator that splits the summary into sub-summaries that share the
-        same value for the given key.
-        """
+    def _split(self, mask, key, default=None):
         if key in self._const_elems:
-            yield self._const_elems[key], deepcopy(self)
+            yield self._const_elems[key], mask.copy()
         elif key not in self._varying_elems:
-            yield defualt, deepcopy(self)
+            yield default, mask.copy()
         else:
             pvt_elem = self._varying_elems[key]
-            filled = bitarray(self.size)
-            filled.setall(0)
+            filled = zeros_bitarray(self.size)
             for pvt_key, pvt_val in six.iteritems(pvt_elem):
                 if isinstance(pvt_val, bitarray):
                     filled |= pvt_val
-                    indices = [i for i, b in enumerate(pvt_val) if b]
+                    new_mask = mask & pvt_val
+                    if any(new_mask):
+                        yield pvt_key, new_mask
                 else:
                     filled[pvt_val] = 1
-                    indices = [pvt_val]
-                yield pvt_key, self.subset(indices)
+                    if mask[pvt_val] == 1:
+                        yield pvt_key, integer_to_bitarray(pvt_val, self.size)
             # yield sub-summary for unfilled indices
-            if not all(filled):
-                indices = [i for i, b in enumerate(pvt_val) if not b]
-                yield defualt, self.subset(indices)
+            new_mask = mask & ~filled
+            if any(new_mask):
+                yield default, new_mask
 
 
-    def group(self, keys, defualt=None):
+    def split(self, key, default=None):
+        mask = ones_bitarray(self.size)
+        for val, val_mask in self._split(mask, key, default):
+            yield val, self.subset(bitarray_to_indices(val_mask))
+
+
+    def _group(self, prv_mask, keys, default=None):
+        if len(keys) == 1:
+            for val, mask in self._split(prv_mask, keys[0], default):
+                yield (val,), mask
+        else:
+            for val, mask in self._split(prv_mask, keys[0], default):
+                for grp_vals, grp_mask in self._group(mask, keys[1:], default):
+                    yield (val,) + grp_vals, grp_mask
+
+
+    def group(self, keys, default=None):
         """Generator that splits the summary into sub-summaries that share the
         same values for the given set of keys."""
-        if len(keys) == 1:
-            for val, summary in self.split(keys[0], defualt):
-                yield (val,), summary
-        else:
-            for val, summary in self.split(keys[0], defualt):
-                for grp_vals, grp_summary in summary.group(keys[1:], defualt):
-                    yield (val,) + grp_vals, grp_summary
+        mask = ones_bitarray(self.size)
+        for grp_vals, grp_mask in self._group(mask, keys, default):
+            yield grp_vals, self.subset(bitarray_to_indices(grp_mask))
 
 
     def find_axes(self, guess_keys, prv_elems=None):
@@ -573,6 +663,10 @@ class ElementSummary(object):
 
         return variation_groups
 
+
+    def __str__(self):
+        return "%s, %s" % (self._const_elems, self._varying_elems)
+
 #===============================================================================
 #
 #
@@ -628,7 +722,6 @@ class VaryingElement(collections.OrderedDict):
     def _unsafe_del(self, repr_key):
         super(VaryingElement, self).__delitem__(repr_key)
 
-
     def _find_repr_key(self, key):
         if self.cmp_func is None:
             return key
@@ -637,6 +730,15 @@ class VaryingElement(collections.OrderedDict):
                 if self.cmp_func(key, repr_key):
                     return repr_key
             return key
+
+    def __getitem__(self, key):
+        repr_key = self._find_repr_key(key)
+        return super(VaryingElement, self).__getitem__(repr_key)
+
+
+    def get(self, key, default=None):
+        repr_key = self._find_repr_key(key)
+        return super(VaryingElement, self).get(repr_key, default)
 
 
     def _unassign_int(self, idx, ignore_keys={}):
@@ -797,15 +899,14 @@ class VaryingElement(collections.OrderedDict):
         # passed in index will not cause the constraint that each index is only
         # associated with one value be broken. This is used when it is known
         # that the passed in index is not currently associated with any value
-        val = super(VaryingElement, self).get(repr_key)
-        if val is None:
+        old_val = super(VaryingElement, self).get(repr_key)
+        if old_val is None:
             self._unsafe_set(repr_key, idx)
-        elif isinstance(val, bitarray):
-            val[idx] = 1
+        elif isinstance(old_val, bitarray):
+            old_val[idx] = 1
         else:
-            new_val = bitarray(self._size)
-            new_val.setall(0)
-            new_val[val] = 1
+            new_val = zeros_bitarray(self.size)
+            new_val[old_val] = 1
             new_val[idx] = 1
             self._unsafe_set(repr_key, new_val)
 
@@ -820,7 +921,7 @@ class VaryingElement(collections.OrderedDict):
         # associated with any value
         old_val = super(VaryingElement, self).get(repr_key)
         if old_val is None:
-            self._unsafe_set(repr_key, barray)
+            self._unsafe_set(repr_key, barray.copy())
         elif isinstance(old_val, bitarray):
             old_val |= barray
         else:
@@ -905,18 +1006,10 @@ class VaryingElement(collections.OrderedDict):
 
 
     def __eq__(self, other):
-        if self.cmp_func is None:
-            # default to base __eq__ if there is no comparision function
-            return super(VaryingElement, self).__eq__(other)
-        else:
-            # quick dimension equality check
-            if len(self) != len(other) or self.size != other.size:
-                return False
-            try:
-                return all(val == self.__getitem__(key)
-                           for key, val in six.iteritems(other))
-            except KeyError:
-                return False
+        # quick dimension equality check
+        if len(self) != len(other) or self.size != other.size:
+            return False
+        return all(val == self.get(key) for key, val in six.iteritems(other))
 
 
     def __ne__(self, other):
@@ -1259,7 +1352,6 @@ class VaryingElement(collections.OrderedDict):
                 self._unsafe_assign_int(repr_key, idx)
 
 
-
     def reduce(self, new2old):
         self._size = len(new2old)
         del_keys = []
@@ -1443,17 +1535,6 @@ class VaryingElement(collections.OrderedDict):
         return result
 
 
-    def extract(self, out2in):
-        check_array = iterable_to_bitarray(out2in, self.size)
-        if len(out2in) != check_array.count(1):
-            raise ValueError
-        result = self.subset(extraced2contained)
-        check_array.invert()
-        new2old = [i for i, b in enumerate(check_array) if b]
-        self.reduce(new2old)
-        return results
-
-
     def check(self):
         if super(VaryingElement, self).__len__() > self._size:
             return False
@@ -1520,15 +1601,6 @@ class VaryingElement(collections.OrderedDict):
         return inv
 
 
-    # def __getitem__(self, key):
-    #     """Get the positional indices for the key"""
-    #     val = super(VaryingElement, self).__getitem__(key)
-    #     if isinstance(val, bitarray):
-    #         return [idx for idx, val in emuerate(val)]
-    #     else:
-    #         return [val]
-    #
-    #
     def where(self, key):
         """Get the positional indices for the key"""
         repr_key = self._find_repr_key(key)
@@ -1538,6 +1610,29 @@ class VaryingElement(collections.OrderedDict):
         if isinstance(val, bitarray):
             return [i for i, b in enumerate(val) if b]
         return [val]
+
+
+    def at(self, idx):
+        """Find the value associated with an index.
+
+        Parameters
+        ----------
+        idx : int
+            index to find the associated value of
+
+        Raises
+        ------
+        KeyError :
+            if no value is associated with the given index.
+        """
+        for key, val in six.iteritems(super(VaryingElement, self)):
+            if isinstance(val, bitarray):
+                if val[idx]:
+                    return key
+            else:
+                if val == idx:
+                    return key
+        raise KeyError("Index %d is unfilled" % idx)
 
 
     def which(self, idx, unfilled_key=None):
@@ -1621,17 +1716,6 @@ class VaryingElement(collections.OrderedDict):
                 break
 
         return varying_axes
-
-
-    def __str__(self):
-        zeros = ['0'] * self._size
-        for key, val in six.iteritems(self):
-            if isinstance(val, bitarray):
-                print "%s : %s" % (val.to01(), key)
-            else:
-                zeros[val] = '1'
-                "%s : %s" % (''.join(zeros), key)
-                zeros[val] = '0'
 
 
 #===============================================================================

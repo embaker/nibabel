@@ -30,12 +30,57 @@ def test_iterable_to_bitarray():
     with assert_raises(IndexError) as cm:
         barray = iterable_to_bitarray([0,2,8], 6)
 
+
+def fnear(r):
+    def func(x, y):
+        return abs(x - y) <= r
+    return func
+
 #===============================================================================
 #
 # VaryingElement tests
 #
 #===============================================================================
 class TestVaryingElement(TestCase):
+
+    def test_get(self):
+        # without comparision function
+        elem = VaryingElement.make_from_inverse([1, 1, 5, 1])
+        assert_equal(elem.get(1), bitarray('1101'))
+        assert_equal(elem.get(5), 2)
+        assert_equal(elem.get(9), None)
+        assert_equal(elem.get(9, default='x'), 'x')
+        # with comparision function
+        elem = VaryingElement.make_from_inverse([1, 1, 5, 1],
+                                                cmp_func=fnear(1))
+        print elem
+        #assert_equal(elem.get(2), bitarray('1101'))
+        assert_equal(elem.get(1), bitarray('1101'))
+        assert_equal(elem.get(0), bitarray('1101'))
+        assert_equal(elem.get(4), 2)
+        assert_equal(elem.get(5), 2)
+        assert_equal(elem.get(6), 2)
+        assert_equal(elem.get(9), None)
+        assert_equal(elem.get(9, default='x'), 'x')
+
+
+    def test__getitem__(self):
+        # without comparision function
+        elem = VaryingElement.make_from_inverse([1, 1, 5, 1])
+        assert_equal(elem[1], bitarray('1101'))
+        assert_equal(elem[5], 2)
+        assert_raises(KeyError, elem.__getitem__, 9)
+        # with comparision function
+        elem = VaryingElement.make_from_inverse([1, 1, 5, 1],
+                                                cmp_func=fnear(1))
+        assert_equal(elem[2], bitarray('1101'))
+        assert_equal(elem[1], bitarray('1101'))
+        assert_equal(elem[0], bitarray('1101'))
+        assert_equal(elem[4], 2)
+        assert_equal(elem[5], 2)
+        assert_equal(elem[6], 2)
+        assert_raises(KeyError, elem.__getitem__, 9)
+
 
     def test__unsafe_set(self):
         result = VaryingElement(size=4)
@@ -689,330 +734,469 @@ def make_data_dict(vals, rkeys, ckeys, unfilled_value=None):
                 result[ckey][rkey] = val
     return result
 
+
+def assert_equal_summaries(result, expected):
+    assert_equal(result.size, expected.size)
+    assert_equal(set(result._const_elems.keys()),
+                 set(expected._const_elems.keys()))
+    assert_equal(set(result._varying_elems.keys()),
+                 set(expected._varying_elems.keys()))
+    msg = "Constant Element [%s]:\n  expect: %s\n  result: %s"
+    for key, val in six.iteritems(result._const_elems):
+        assert_equal(val, expected[key], msg % (key, expected[key], val))
+    msg = "Varing Element [%s]:\n  expect: %s\n  result: %s"
+    for key, val in six.iteritems(result._varying_elems):
+        assert_equal(val, expected[key], msg % (key, expected[key], val))
+
+
 class TestElementSummary(TestCase):
 
-    def test_remove(self):
+    def test_make_from_inverses(self):
+        data = {'a' : [5, 5, 5, 5, 5, 5, 5],
+                'b' : [1, 1, 2, 2, 1, 1, 1],
+                'c' : [3, 4, 3, 3, 4, 4, 3],
+                'd' : [0, 0, 1, 1, 0, 2, 0],
+                'e' : [5, 0, 1, 1, 0, 4, 3],
+                'f' : [0, 0, 0, 0, 0, 0, 0]}
+        cmps = {'b' : lambda x, y: abs(x-y) < 2,
+                'e' : lambda x, y: abs(x-y) < 2}
+        uval = 0
+        summary = ElementSummary.make_from_inverses(data,
+                                                    unfilled_value=uval,
+                                                    compare_rules=cmps)
+        # check dimensions
+        assert_equal(summary.size, 7)
+        assert_equal(len(summary), 5)
+        # check constant elements
+        assert_equal(summary['a'], 5)
+        assert_true(summary['b'] in (1, 2))
+        # check varying elements
+        assert_equal(summary['c'],
+                     VaryingElement.make_from_inverse(data['c'],
+                                                      unfilled_key=uval))
+        assert_equal(summary['d'],
+                     VaryingElement.make_from_inverse(data['d'],
+                                                      unfilled_key=uval))
+        assert_equal(summary['e'],
+                     VaryingElement.make_from_inverse(data['e'],
+                                                      unfilled_key=uval,
+                                                      cmp_func=cmps['e']))
+        # check empty elements
+        assert_false('f' in summary)
+        # test size check
+        data = {'a' : [1] * 4,
+                'b' : [1] * 5}
+        assert_raises(ValueError, ElementSummary.make_from_inverses, data)
 
-        result = ElementSummary()
-        result._tags = ['0','1','2','3','4','5','6']
-        result._const_elems = {}
-        result._varying_elems["VKey1"] = VaryingElement(size=7)
-        result._varying_elems["VKey1"][2.0] = bitarray('0001010')
-        result._varying_elems["VKey1"][6.2] = bitarray('0110000')
-        result._varying_elems["VKey1"][7.8] = bitarray('1000101')
 
-        result._varying_elems["VKey2"] = VaryingElement(size=7)
-        result._varying_elems["VKey2"][11] = bitarray('1110010')
-        result._varying_elems["VKey2"][12] = bitarray('0001001')
-        result._varying_elems["VKey2"][14] = 4
-
-        result._varying_elems["VKey3"] = VaryingElement(size=7)
-        result._varying_elems["VKey3"][23] = 3
-        result._varying_elems["VKey3"][25] = bitarray('1110101')
-        result._varying_elems["VKey3"][21] = 5
-
-        result.remove(['3','5'])
-
-        assert_equal(['0','1','2','4','6'], result._tags)
-        assert_equal({"VKey3" : 25}, result._const_elems)
-        assert_equal({"VKey1", "VKey2"}, set(result._varying_elems.keys()))
-
-        assert_equal(bitarray('01100'), result._varying_elems["VKey1"][6.2])
-        assert_equal(bitarray('10011'), result._varying_elems["VKey1"][7.8])
-
-        assert_equal(bitarray('11100'), result._varying_elems["VKey2"][11])
-        assert_equal(4, result._varying_elems["VKey2"][12])
-        assert_equal(3, result._varying_elems["VKey2"][14])
+    # def test_remove(self):
+    #
+    #     result = ElementSummary()
+    #     result._tags = ['0','1','2','3','4','5','6']
+    #     result._const_elems = {}
+    #     result._varying_elems["VKey1"] = VaryingElement(size=7)
+    #     result._varying_elems["VKey1"][2.0] = bitarray('0001010')
+    #     result._varying_elems["VKey1"][6.2] = bitarray('0110000')
+    #     result._varying_elems["VKey1"][7.8] = bitarray('1000101')
+    #
+    #     result._varying_elems["VKey2"] = VaryingElement(size=7)
+    #     result._varying_elems["VKey2"][11] = bitarray('1110010')
+    #     result._varying_elems["VKey2"][12] = bitarray('0001001')
+    #     result._varying_elems["VKey2"][14] = 4
+    #
+    #     result._varying_elems["VKey3"] = VaryingElement(size=7)
+    #     result._varying_elems["VKey3"][23] = 3
+    #     result._varying_elems["VKey3"][25] = bitarray('1110101')
+    #     result._varying_elems["VKey3"][21] = 5
+    #
+    #     result.remove(['3','5'])
+    #
+    #     assert_equal(['0','1','2','4','6'], result._tags)
+    #     assert_equal({"VKey3" : 25}, result._const_elems)
+    #     assert_equal({"VKey1", "VKey2"}, set(result._varying_elems.keys()))
+    #
+    #     assert_equal(bitarray('01100'), result._varying_elems["VKey1"][6.2])
+    #     assert_equal(bitarray('10011'), result._varying_elems["VKey1"][7.8])
+    #
+    #     assert_equal(bitarray('11100'), result._varying_elems["VKey2"][11])
+    #     assert_equal(4, result._varying_elems["VKey2"][12])
+    #     assert_equal(3, result._varying_elems["VKey2"][14])
 
 
     def test_subset(self):
-        parent = ElementSummary()
-        parent._tags = ['0','1','2','3','4','5','6']
-        parent._const_elems = {'c->c' : 5}
-
-        parent._varying_elems['v->c'] = \
-            VaryingElement.make_from_inverse([1, 1, 2, 2, 1, 1, 1])
-        parent._varying_elems['v->v'] = \
-            VaryingElement.make_from_inverse([3, 4, 3, 3, 4, 4, 3])
-        parent._varying_elems['v->_'] = \
-            VaryingElement.make_from_inverse([None, None, 1, 1, None, 2, None])
-
-        child = parent.subset([0, 1, 4, 6])
-
-        assert_equal(['0', '1', '4', '6'], child._tags)
-        assert_equal(2, len(child._const_elems))
-        assert_equal(5, child._const_elems['c->c'])
-        assert_equal(1, child._const_elems['v->c'])
-        assert_equal(1, len(child._varying_elems))
-        assert_equal(
-             VaryingElement.make_from_inverse([3, 4, 4, 3]),
-             child._varying_elems['v->v'])
+        parent_data = [('c->c', [5, 5, 5, 5, 5, 5, 5]),
+                       ('v->c', [1, 1, 2, 2, 1, 1, 1]),
+                       ('v->v', [3, 4, 3, 3, 4, 4, 3]),
+                       ('v->_', [None, None, 1, 1, None, 2, None])]
+        parent = ElementSummary.make_from_inverses(parent_data)
+        # multi index subset
+        indices = [0, 1, 4, 6]
+        child_data = [('c->c', [5, 5, 5, 5]),
+                      ('v->c', [1, 1, 1, 1]),
+                      ('v->v', [3, 4, 4, 3])]
+        child = ElementSummary.make_from_inverses(child_data)
+        assert_equal(parent.subset(indices), child)
+        # single index subset
+        indices = [1]
+        child_data = [('c->c', [5]),
+                      ('v->c', [1]),
+                      ('v->v', [4])]
+        child = ElementSummary.make_from_inverses(child_data)
+        assert_equal(parent.subset(indices), child)
 
 
     def test_split(self):
-        parent = ElementSummary()
-        data = [('0', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 1}),
-                ('1', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 1}),
-                ('2', {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 1}),
-                ('3', {'1,2->c' : 5, 'key' : 2, '1,2->v' : 3, '1->_' : 2}),
-                ('4', {'1,2->c' : 5, 'key' : 2, '1,2->v' : 4, '1->_' : 2}),
-                ('5', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 4, '2->_' : 2}),
-                ('6', {'1,2->c' : 5, 'key' : 1, '1,2->v' : 3, '2->_' : 2}),
-                ]
-        parent.extend(data)
-        # parent._tags = ['0','1','2','3','4','5','6']
-        # parent._const_elems = {'1,2->c' : 5}
-        #
-        # parent._varying_elems['key'] = \
-        #     VaryingElement.make_from_inverse([1, 1, 2, 2, 2, 1, 1])
-        # parent._varying_elems['1,2->v'] = \
-        #     VaryingElement.make_from_inverse([3, 4, 3, 3, 4, 4, 3])
-        # parent._varying_elems['1->_'] = \
-        #     VaryingElement.make_from_inverse([None, None, 1, 2, 2, None, None])
-        # parent._varying_elems['2->_'] = \
-        #     VaryingElement.make_from_inverse([1, 1, None, None, None, 2, 2])
-
-        result = dict(item for item in parent.split('key'))
-        assert_equal(2, len(result))
-
-        assert_true(1 in result)
-        assert_equal(2, len(result[1]._const_elems))
-        assert_equal(2, len(result[1]._varying_elems))
-        assert_equal(5, result[1]._const_elems['1,2->c'])
-        assert_equal(1, result[1]._const_elems['key'])
-        assert_equal(set(['0','1','5','6']), set(result[1]._tags))
-        assert_equal(
-            VaryingElement.make_from_inverse([3, 4, 4, 3]),
-            result[1]._varying_elems['1,2->v'])
-        assert_equal(
-            VaryingElement.make_from_inverse([1, 1, 2, 2]),
-            result[1]._varying_elems['2->_'])
-
-        assert_true(2 in result)
-        print result[2]._const_elems.keys()
-        assert_equal(2, len(result[2]._const_elems))
-        assert_equal(2, len(result[2]._varying_elems))
-        assert_equal(5, result[2]._const_elems['1,2->c'])
-        assert_equal(2, result[2]._const_elems['key'])
-        assert_equal(['2','3','4'], result[2]._tags)
-        assert_equal(
-            VaryingElement.make_from_inverse([3, 3, 4]),
-            result[2]._varying_elems['1,2->v'])
-        assert_equal(
-            VaryingElement.make_from_inverse([1, 2, 2]),
-            result[2]._varying_elems['1->_'])
+        split_key = 'b'
+        parent_data = {'a' : [5, 5, 5, 5, 5, 5, 5, 5, 5],
+                       'b' : [1, 1, 2, 2, 2, 1, 0, 1, 0],
+                       'c' : [3, 4, 3, 3, 4, 4, 3, 3, 4],
+                       'd' : [0, 0, 0, 2, 2, 0, 2, 0, 1],
+                       'e' : [1, 1, 0, 0, 0, 1, 2, 1, 2]}
+        child_data = {1 : {'a' : [5, 5, 5, 5],
+                           'b' : [1, 1, 1, 1],
+                           'c' : [3, 4, 4, 3],
+                           'e' : [1, 1, 1, 1]},
+                      2 : {'a' : [5, 5, 5],
+                           'b' : [2, 2, 2],
+                           'c' : [3, 3, 4],
+                           'd' : [0, 2, 2]},
+                      0 : {'a' : [5, 5],
+                           'c' : [3, 4],
+                           'd' : [2, 1],
+                           'e' : [2, 2]},
+                     }
+        parent = ElementSummary.make_from_inverses(parent_data,
+                                                   unfilled_value=0)
+        child = {key : ElementSummary.make_from_inverses(val, unfilled_value=0)
+                 for key, val in six.iteritems(child_data)}
+        # check using default default
+        result = dict(item for item in parent.split(split_key))
+        assert_equal(result[1], child[1])
+        assert_equal(result[2], child[2])
+        assert_equal(result[None], child[0])
+        # check using given default
+        result = dict(item for item in parent.split(split_key, default='x'))
+        assert_equal(result[1], child[1])
+        assert_equal(result[2], child[2])
+        assert_equal(result['x'], child[0])
 
 
     def test_group(self):
-        parent = ElementSummary()
-        parent._tags = ['0','1','2','3','4','5','6','7']
-        parent._const_elems = {'ckey' : 5}
-
-        parent._varying_elems['key1'] = \
-            VaryingElement.make_from_inverse([1, 1, 2, 2, 2, 1, 1, 1])
-        parent._varying_elems['key2'] = \
-            VaryingElement.make_from_inverse([3, 4, 3, 3, 4, 4, 3, 2])
-        parent._varying_elems['key3'] = \
-            VaryingElement.make_from_inverse([5, 6, 5, 6, 5, 7, 7, 5])
-        parent._varying_elems['key4'] = \
-            VaryingElement.make_from_inverse([8, 9, 9, 9, 8, 9, 8, 8])
-
-        result = dict(item for item in parent.group(('key1', 'key4')))
-        assert_equal(4, len(result))
-
-        assert_true((1, 8) in result)
-        assert_equal(3, len(result[(1, 8)]._const_elems))
-        assert_equal(2, len(result[(1, 8)]._varying_elems))
-        assert_equal(5, result[(1, 8)]._const_elems['ckey'])
-        assert_equal(1, result[(1, 8)]._const_elems['key1'])
-        assert_equal(8, result[(1, 8)]._const_elems['key4'])
-        assert_equal(
-            VaryingElement.make_from_inverse([3, 3, 2]),
-            result[(1, 8)]._varying_elems['key2'])
-        assert_equal(
-            VaryingElement.make_from_inverse([5, 7, 5]),
-            result[(1, 8)]._varying_elems['key3'])
-
-        assert_true((1, 9) in result)
-        assert_equal(4, len(result[(1, 9)]._const_elems))
-        assert_equal(1, len(result[(1, 9)]._varying_elems))
-        assert_equal(5, result[(1, 9)]._const_elems['ckey'])
-        assert_equal(1, result[(1, 9)]._const_elems['key1'])
-        assert_equal(4, result[(1, 9)]._const_elems['key2'])
-        assert_equal(9, result[(1, 9)]._const_elems['key4'])
-        assert_equal(
-            VaryingElement.make_from_inverse([6, 7]),
-            result[(1, 9)]._varying_elems['key3'])
-
-        assert_true((2, 8) in result)
-        assert_equal(5, len(result[(2, 8)]._const_elems))
-        assert_equal(0, len(result[(2, 8)]._varying_elems))
-        assert_equal(5, result[(2, 8)]._const_elems['ckey'])
-        assert_equal(2, result[(2, 8)]._const_elems['key1'])
-        assert_equal(4, result[(2, 8)]._const_elems['key2'])
-        assert_equal(5, result[(2, 8)]._const_elems['key3'])
-        assert_equal(8, result[(2, 8)]._const_elems['key4'])
-
-        assert_true((2, 9) in result)
-        assert_equal(4, len(result[(2, 9)]._const_elems))
-        assert_equal(1, len(result[(2, 9)]._varying_elems))
-        assert_equal(5, result[(2, 9)]._const_elems['ckey'])
-        assert_equal(2, result[(2, 9)]._const_elems['key1'])
-        assert_equal(3, result[(2, 9)]._const_elems['key2'])
-        assert_equal(9, result[(2, 9)]._const_elems['key4'])
-        assert_equal(
-            VaryingElement.make_from_inverse([5, 6]),
-            result[(2, 9)]._varying_elems['key3'])
-
-
-    def test_merge(self):
-        result = ElementSummary()
-        result._tags = ['0','1','2','3']
-        result._const_elems = {'c+c=c' : 1,
-                              'c+c=v' : 2,
-                              'c+_' : 3,
-                              'c+v' : 4}
-        result._varying_elems['v+v'] = \
-            VaryingElement.make_from_inverse([1, 1, 2, 2])
-        result._varying_elems['v+c'] = \
-            VaryingElement.make_from_inverse([3, 4, 3, 3])
-        result._varying_elems['v+_'] = \
-            VaryingElement.make_from_inverse([5, 5, 5, 6])
-
-        other = ElementSummary()
-        other._tags = ['4','5','6']
-        other._const_elems = {'c+c=c' : 1,
-                             'c+c=v' : 3,
-                             '_+c' : 6,
-                             'v+c' : 4}
-        other._varying_elems['v+v'] = \
-            VaryingElement.make_from_inverse([1, 2, 3])
-        other._varying_elems['c+v'] = \
-            VaryingElement.make_from_inverse([3, 4, 3])
-        other._varying_elems['_+v'] = \
-            VaryingElement.make_from_inverse([6, 5, 5])
-
-        result.merge(other)
-
-        assert_equal(['0','1','2','3','4','5','6'], result._tags)
-        assert_equal({'c+c=c' : 1}, result._const_elems)
-        assert_equal(
-            VaryingElement.make_from_inverse([2,2,2,2,3,3,3]),
-            result._varying_elems['c+c=v'])
-        assert_equal(
-            VaryingElement.make_from_inverse([3,3,3,3,None,None,None]),
-            result._varying_elems['c+_'])
-        assert_equal(
-            VaryingElement.make_from_inverse([4,4,4,4,3,4,3]),
-            result._varying_elems['c+v'])
-        assert_equal(
-            VaryingElement.make_from_inverse([None,None,None,None,6,6,6]),
-            result._varying_elems['_+c'])
-        assert_equal(
-            VaryingElement.make_from_inverse([1,1,2,2,1,2,3]),
-            result._varying_elems['v+v'])
-        assert_equal(
-            VaryingElement.make_from_inverse([None,None,None,None,6,5,5]),
-            result._varying_elems['_+v'])
+        group_keys = ('b', 'f')
+        parent_data = {'a' : [5, 5, 5, 5, 5, 5, 5, 5, 5],
+                       'b' : [1, 1, 2, 2, 2, 1, 0, 1, 0],
+                       'c' : [3, 4, 3, 3, 4, 4, 3, 3, 4],
+                       'd' : [0, 0, 0, 2, 2, 0, 2, 0, 1],
+                       'e' : [1, 1, 0, 0, 0, 1, 2, 1, 2],
+                       'f' : [9, 7, 8, 8, 8, 7, 9, 7, 9]}
+        child_data = {(1, 7) : {'a' : [5, 5, 5],
+                                'b' : [1, 1, 1],
+                                'c' : [4, 4, 3],
+                                'e' : [1, 1, 1],
+                                'f' : [7, 7, 7]},
+                      (1, 9) : {'a' : [5],
+                                'b' : [1],
+                                'c' : [3],
+                                'e' : [1],
+                                'f' : [9]},
+                      (2, 8) : {'a' : [5, 5, 5],
+                                'b' : [2, 2, 2],
+                                'c' : [3, 3, 4],
+                                'd' : [0, 2, 2],
+                                'f' : [8, 8, 8]},
+                      (0, 9) : {'a' : [5, 5],
+                                'c' : [3, 4],
+                                'd' : [2, 1],
+                                'e' : [2, 2],
+                                'f' : [9, 9]}}
+        parent = ElementSummary.make_from_inverses(parent_data,
+                                                   unfilled_value=0)
+        child = {key : ElementSummary.make_from_inverses(val, unfilled_value=0)
+                 for key, val in six.iteritems(child_data)}
+        result = dict(item for item in parent.group(group_keys))
+        assert_equal(result[(1, 7)], child[(1, 7)])
+        assert_equal(result[(1, 9)], child[(1, 9)])
+        assert_equal(result[(2, 8)], child[(2, 8)])
+        assert_equal(result[(None, 9)], child[(0, 9)])
+        # none None default
+        result = dict(item for item in parent.group(group_keys, default='x'))
+        assert_equal(result[(1, 7)], child[(1, 7)])
+        assert_equal(result[(1, 9)], child[(1, 9)])
+        assert_equal(result[(2, 8)], child[(2, 8)])
+        assert_equal(result[('x', 9)], child[(0, 9)])
 
 
     def test_find_axes(self):
-
+        # make fake data
         axes_names = ('x', 'y', 'z')
-        axes_data = np.mgrid[0:3, 0:4, 0:5]
-        axes_data = tuple(np.ravel(axes_data[i]) for i in range(axes_data.shape[0]))
-
-        n = len(axes_data[0])
-
-        a = [1, 2, 3]
-        a.extend([0] * (n-len(a)))
-        random.shuffle(a)
-
-        b = [1, 1, 1, 2, 2]
-        b.extend([0] * (n-len(b)))
-        random.shuffle(b)
-
-        c = [5] * n
-
-        names = axes_names + ('a', 'b', 'c')
-        values = axes_data + (a, b, c)
-        data = [(i, dict(zip(names, val)))
-                for i, val in enumerate(zip(*values))]
-        random.shuffle(data)
-
-        summary = ElementSummary()
-        summary.extend(data)
-
-        guess_keys = [val for val in names if val != 'x']
+        axes_grid = np.mgrid[0:3, 0:4, 0:5]
+        data = {key : np.ravel(axes_grid[i])
+                for i, key in enumerate(axes_names)}
+        size = len(data['x'])
+        data['a'] = np.array([1, 2, 3] + ([0] * (size - 3)))
+        data['b'] = np.array([1, 1, 2, 2, 3] + ([0] * (size - 5)))
+        data['c'] = np.array([5] * size)
+        # shuffle data
+        mix_idx = np.random.permutation(size)
+        for key, val in six.iteritems(data):
+            data[key] = val[mix_idx]
+        # create summary containing one set of axes
+        summary = ElementSummary.make_from_inverses(data)
+        # test finding no axes from guess keys
+        guess_keys = ['y', 'z', 'a', 'b', 'c']
         random.shuffle(guess_keys)
         axes_keys = summary.find_axes(guess_keys)
         assert_true(axes_keys is None)
-
+        # test finding axes with input previous elements with exact guess_keys
         prv_elems = (summary.get('x'),)
-        expected_axes_keys = set(ax for ax in axes_names if ax != 'x')
+        guess_keys = ['y', 'z', 'a', 'b', 'c']
+        expected_axes_keys = {'y', 'z'}
         returned_axes_keys = set(summary.find_axes(guess_keys, prv_elems))
         assert_equal(expected_axes_keys, returned_axes_keys)
-
-        guess_keys = ['x'] + guess_keys
+        # test finding axes with input previous elements with guess_keys
+        # having axis already given in previous elemnts
+        prv_elems = (summary.get('x'),)
+        guess_keys = ['x', 'y', 'z', 'a', 'b', 'c']
+        expected_axes_keys = {'y', 'z'}
         returned_axes_keys = set(summary.find_axes(guess_keys, prv_elems))
         assert_equal(expected_axes_keys, returned_axes_keys)
-
-        random.shuffle(guess_keys)
-        expected_axes_keys = set(axes_names)
+        # test finding all axes
+        guess_keys = ['b', 'a', 'y', 'c', 'z', 'x']
+        expected_axes_keys = {'x', 'y', 'z'}
+        returned_axes_keys = set(summary.find_axes(guess_keys))
+        assert_equal(expected_axes_keys, returned_axes_keys)
+        # test finding axes when there is a duplicate of an axis
+        data['w'] = data['x']
+        summary = ElementSummary.make_from_inverses(data)
+        guess_keys = ['w', 'b', 'a', 'y', 'c', 'z', 'x']
+        expected_axes_keys = {'w', 'y', 'z'}
         returned_axes_keys = set(summary.find_axes(guess_keys))
         assert_equal(expected_axes_keys, returned_axes_keys)
 
 
-    def test_append(self):
+    def test_resize(self):
+        # resieze from empty
         summary = ElementSummary()
+        summary.resize(5)
+        assert_equal(summary.size, 5)
+        # increase resize of non-empty
+        summary = ElementSummary.make_from_inverses({'a' : [0, 1, 0, 1]})
+        assert_equal(summary.size, 4)
+        summary.resize(6)
+        assert_equal(summary.size, 6)
+        assert_equal(summary['a'].size, 6)
+        # increase resize of non-empty
+        summary = ElementSummary.make_from_inverses({'a' : [0, 1, 0, 1]})
+        assert_equal(summary.size, 4)
+        summary.resize(2)
+        assert_equal(summary.size, 2)
+        assert_equal(summary['a'].size, 2)
 
-        summary.append(0, {'a':2, 'b':0, 'c':3, 'd':4})
+
+    def test__unsafe_append_summary(self):
+        initial_size = 7
+        append_size = 6
+        initial_data = {'v,v' : [0, 1, 0, 2, 2, 0, 5],
+                        'c,c' : [0, 0, 0, 0, 0, 0, 0],
+                        'c,v' : [1, 1, 1, 1, 1, 1, 1],
+                        'v,c' : [1, 0, 2, 2, None, 1, 2],
+                        'v,_' : [0, 1, 3, None, 2, 2, 3],
+                        'c,_' : [3, 3, 3, 3, 3, 3, 3],
+                        'cmp:v,v' : [0, 3, 3, 6, 9, 9, 9],
+                        'cmp:c,v' : [6, 6, 6, 6, 6, 6, 6],
+                        'cmp:v,c' : [5, 5, 1, 2, None, 5, 5]}
+        append_data = {'v,v' : [0, 1, 1, 1, 0, 3],
+                       'c,c' : [0, 0, 0, 0, 0, 0],
+                       'c,v' : [1, 0, 2, 0, 2, 2],
+                       'v,c' : [1, 1, 1, 1, 1, 1],
+                       '_,v' : [1, 1, None, 2, None, 1],
+                       '_,c' : [5, 5, 5, 5, 5, 5],
+                       'cmp:v,v' : [7, 4, 1, 1, 10, 10],
+                       'cmp:c,v' : [5, 7, 1, 2, None, 7],
+                       'cmp:v,c' : [6, 6, 6, 6, 6, 6]}
+        expected_data = {'v,v' : initial_data['v,v'] + append_data['v,v'],
+                         'c,c' : initial_data['c,c'] + append_data['c,c'],
+                         'c,v' : initial_data['c,v'] + append_data['c,v'],
+                         'v,c' : initial_data['v,c'] + append_data['v,c'],
+                         'v,_' : initial_data['v,_'] + [None]*append_size,
+                         'c,_' : initial_data['c,_'] + [None]*append_size,
+                         '_,v' : [None]*initial_size + append_data['_,v'],
+                         '_,c' : [None]*initial_size + append_data['_,c'],
+                        'cmp:v,v' : [0, 3, 3, 6, 9, 9, 9, 6, 3, 0, 0, 9, 9],
+                        'cmp:c,v' : [6, 6, 6, 6, 6, 6, 6, 5, 7, 1, 2, None, 7],
+                        'cmp:v,c' : [5, 5, 1, 2, None, 5, 5, 5, 5, 5, 5, 5, 5]}
+        cmp_rules = {'cmp:v,v' : fnear(1),
+                     'cmp:c,v' : fnear(1),
+                     'cmp:v,c' : fnear(1)}
+        append = ElementSummary.make_from_inverses(append_data)
+        expected = ElementSummary.make_from_inverses(expected_data,
+                                                     compare_rules=cmp_rules)
+        result = ElementSummary.make_from_inverses(initial_data,
+                                                   compare_rules=cmp_rules)
+        result.resize(initial_size + append_size)
+        result._unsafe_append_summary(initial_size, append)
+        assert_equal_summaries(result, expected)
+
+
+    def test_append(self):
+        summary = ElementSummary(compare_rules={'c' : lambda x,y: abs(x-y) < 2})
+        # first append
+        summary.append({'a':2, 'b':0, 'c':3, 'd':4})
+        assert_equal(summary.size, 1)
         assert_equal(set(summary._const_elems.keys()), {'a', 'b', 'c', 'd'})
         assert_equal(summary['a'], 2)
         assert_equal(summary['b'], 0)
         assert_equal(summary['c'], 3)
         assert_equal(summary['d'], 4)
-
-        summary.append(1, {'a':1, 'b':0, 'c':1, 'd':0})
-        assert_equal(set(summary._const_elems.keys()), {'b'})
-        assert_equal(set(summary._varying_elems.keys()), {'a', 'c', 'd'})
+        # second append
+        summary.append({'a':1, 'b':0, 'c':4, 'd':0})
+        assert_equal(summary.size, 2)
+        assert_equal(set(summary._const_elems.keys()), {'b', 'c'})
+        assert_equal(set(summary._varying_elems.keys()), {'a', 'd'})
         assert_equal(summary['a'], VaryingElement.make_from_inverse([2, 1]))
         assert_equal(summary['b'], 0)
-        assert_equal(summary['c'], VaryingElement.make_from_inverse([3, 1]))
+        assert_equal(summary['c'], 3)
         assert_equal(summary['d'], VaryingElement.make_from_inverse([4, 0]))
+        # third append
+        summary.append({'b':0, 'c':2, 'd':0, 'e':5})
+        assert_equal(summary.size, 3)
+        assert_equal(set(summary._const_elems.keys()), {'b', 'c'})
+        assert_equal(summary['b'], 0)
+        assert_equal(summary['c'], 3)
+        assert_equal(set(summary._varying_elems.keys()), {'a', 'd', 'e'})
+        assert_equal(summary['a'],
+                     VaryingElement.make_from_inverse([2, 1, None]))
+        assert_equal(summary['d'],
+                     VaryingElement.make_from_inverse([4, 0, 0]))
+        assert_equal(summary['e'],
+                     VaryingElement.make_from_inverse([None, None, 5]))
+        # test appending of another Element Summary
+        initial_data = {'a' : [0, 1, 0, 2, 2, 0],
+                        'b' : [0, 0, 0, 0, 0, 0],
+                        'c' : [1, 1, 1, 1, 1, 1],
+                        'd' : [1, 0, 2, 2, 1, 1],
+                        'e' : [0, 1, 3, None, 2, 2],
+                        'f' : [1, 1, None, None, None, 1]}
+        extended_data = {'a' : [0, 1, 1, 1, 0],
+                         'b' : [0, 0, 0, 0, 0],
+                         'c' : [1, 0, 2, 0, 2],
+                         'd' : [1, 1, 1, 1, 1],
+                         'e' : [1, 1, None, None, None],
+                         'g' : [None, None, 1, 2, 1]}
+        full_data = {'a' : initial_data['a'] + extended_data['a'],
+                     'b' : initial_data['b'] + extended_data['b'],
+                     'c' : initial_data['c'] + extended_data['c'],
+                     'd' : initial_data['d'] + extended_data['d'],
+                     'e' : initial_data['e'] + extended_data['e'],
+                     'f' : initial_data['f'] + ([None]*5),
+                     'g' : ([None]*6) + extended_data['g']}
+        expected = ElementSummary.make_from_inverses(full_data)
+        appended = ElementSummary.make_from_inverses(initial_data)
+        appended.append(ElementSummary.make_from_inverses(extended_data))
+        assert_equal(appended.size, 11)
+        assert_equal(appended, expected)
 
 
     def test_extend(self):
-        inverses = {'a' : [0, 1, 1, 1, 0, 0],
-                    'b' : [0, 0, 0, 0, 0, 0],
-                    'c' : [1, 0, 2, 0, 2, 0],
-                    'd' : [0, 1, 3, 2, 2, 2],
-                    'e' : [1, 1, None, None, None, 1],
-                    'f' : [None, None, 1, 2, 1, None]}
-        data_pairs = [{'a':0, 'b':0, 'c':1, 'd':0, 'e':1},
-                      {'a':1, 'b':0, 'c':0, 'd':1, 'e':1},
-                      {'a':1, 'b':0, 'c':2, 'd':3, 'f':1},
-                      {'a':1, 'b':0, 'c':0, 'd':2, 'f':2},
-                      {'a':0, 'b':0, 'c':2, 'd':2, 'f':1},
-                      {'a':0, 'b':0, 'c':0, 'd':2, 'e':1}]
-        data_pairs = zip(range(len(data_pairs)), data_pairs)
-
+        def fake_inner(data, idx, unfilled_value=None):
+            for key, val in six.iteritems(data):
+                if val[idx] != unfilled_value:
+                    yield key, val[idx]
+        def fake_outer(data, size, unfilled_value=None):
+            for idx in range(size):
+                yield fake_inner(data, idx, unfilled_value)
+        initial_data = {'a' : [0, 1, 0, 2, 2, 0],
+                        'b' : [0, 0, 0, 0, 0, 0],
+                        'c' : [1, 1, 1, 1, 1, 1],
+                        'd' : [1, 0, 2, 2, 1, 1],
+                        'e' : [0, 1, 3, None, 2, 2],
+                        'f' : [1, 1, None, None, None, 1]}
+        extended_data = {'a' : [0, 1, 1, 1, 0],
+                         'b' : [0, 0, 0, 0, 0],
+                         'c' : [1, 0, 2, 0, 2],
+                         'd' : [1, 1, 1, 1, 1],
+                         'e' : [1, 1, None, None, None],
+                         'g' : [None, None, 1, 2, 1]}
+        full_data = {'a' : initial_data['a'] + extended_data['a'],
+                     'b' : initial_data['b'] + extended_data['b'],
+                     'c' : initial_data['c'] + extended_data['c'],
+                     'd' : initial_data['d'] + extended_data['d'],
+                     'e' : initial_data['e'] + extended_data['e'],
+                     'f' : initial_data['f'] + ([None]*5),
+                     'g' : ([None]*6) + extended_data['g']}
+        # test inital extend on empty summary
         summary = ElementSummary()
-        summary.extend(data_pairs)
-        # test constant elems
+        summary.extend(fake_outer(initial_data, 6))
+        # test size
+        assert_equal(summary.size, 6)
+        # test constant elements
+        assert_equal(set(summary._const_elems.keys()), {'b', 'c'})
+        assert_equal(summary['b'], 0)
+        assert_equal(summary['c'], 1)
+        # test varying elements
+        varying_keys = {'a','d','e','f'}
+        assert_equal(set(summary._varying_elems.keys()), varying_keys)
+        for key in varying_keys:
+            true_elem = VaryingElement.make_from_inverse(initial_data[key])
+            assert_equal(summary[key], true_elem)
+        # test addtional extend_data
+        summary.extend(fake_outer(extended_data, 5))
+        # test size
+        assert_equal(summary.size, 11)
+        # test constant elements
         assert_equal(set(summary._const_elems.keys()), {'b'})
         assert_equal(summary['b'], 0)
         # test varying elements
-        assert_equal(set(summary._varying_elems.keys()), {'a','c','d','e','f'})
-        assert_equal(summary['a'],
-                     VaryingElement.make_from_inverse(inverses['a']))
-        assert_equal(summary['c'],
-                     VaryingElement.make_from_inverse(inverses['c']))
-        assert_equal(summary['d'],
-                     VaryingElement.make_from_inverse(inverses['d']))
-        assert_equal(summary['a'],
-                     VaryingElement.make_from_inverse(inverses['a']))
-        assert_equal(summary['e'],
-                     VaryingElement.make_from_inverse(inverses['e']))
-        assert_equal(summary['f'],
-                     VaryingElement.make_from_inverse(inverses['f']))
+        varying_keys = {'a','c','d','e','f','g'}
+        assert_equal(set(summary._varying_elems.keys()), varying_keys)
+        for key in varying_keys:
+            true_elem = VaryingElement.make_from_inverse(full_data[key])
+            assert_equal(summary[key], true_elem)
+        # test using guess_size
+        # test inital extend on empty summary
+        true_summary = ElementSummary.make_from_inverses(initial_data)
+        # high guess
+        summary = ElementSummary()
+        summary.extend(fake_outer(initial_data, 6), guess_size=9)
+        assert_equal(summary, true_summary)
+        # exact guess
+        summary = ElementSummary()
+        summary.extend(fake_outer(initial_data, 6), guess_size=6)
+        assert_equal(summary, true_summary)
+        # low guess
+        summary = ElementSummary()
+        summary.extend(fake_outer(initial_data, 6), guess_size=4)
+        assert_equal(summary, true_summary)
+        # test addtional extend_data
+        true_summary = ElementSummary.make_from_inverses(full_data)
+        # high guess
+        summary = ElementSummary.make_from_inverses(initial_data)
+        summary.extend(fake_outer(extended_data, 5), guess_size=14)
+        assert_equal(summary, true_summary)
+        # exact guess
+        summary = ElementSummary.make_from_inverses(initial_data)
+        summary.extend(fake_outer(extended_data, 5), guess_size=11)
+        assert_equal(summary, true_summary)
+        # low guess
+        summary = ElementSummary.make_from_inverses(initial_data)
+        summary.extend(fake_outer(extended_data, 5), guess_size=9)
+        assert_equal(summary, true_summary)
+        # test the inclusion of summaries in input sequence
+        start_data = {'a' : [0, 1, 0],
+                      'b' : [0, 0, 0],
+                      'c' : [1, 1, 1],
+                      'd' : [2, 2, 2],
+                      'e' : [0, 1, 3],
+                      'f' : [1, 1, None]}
+        middle_data = {'a' : [2, 0, 1, 1, 1],
+                       'b' : [0, 0, 0, 0, 0],
+                       'c' : [1, 1, 1, 1, 1],
+                       'd' : [2, 1, 3, 2, 1],
+                       'e' : [None, 2, 2, 1, 1],
+                       'f' : [None, None, 1, None, None]}
+        end_data = {'a' : [0, 1, 1, 2, 0],
+                    'b' : [0, 0, 0, 0, 0],
+                    'c' : [1, 0, 2, 0, 2],
+                    'd' : [2, 2, 2, 2, 2],
+                    'e' : [1, 1, None, None, None],
+                    'g' : [None, None, 1, 2, 1]}
