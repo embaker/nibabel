@@ -993,7 +993,7 @@ class TestElementSummary(TestCase):
         assert_equal(summary['a'].size, 2)
 
 
-    def test__unsafe_append_summary(self):
+    def test__append_summary(self):
         initial_size = 7
         append_size = 6
         initial_data = {'v,v' : [0, 1, 0, 2, 2, 0, 5],

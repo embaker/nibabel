@@ -81,6 +81,7 @@ def bitarray_to_indices(barray, start=0):
     """
     return tuple(i for i, b in enumerate(barray, start) if b)
 
+
 #===============================================================================
 #
 #
@@ -89,12 +90,14 @@ def bitarray_to_indices(barray, start=0):
 class ElementSummary(object):
     """ Summary of the attributes of multiple DICOM files """
 
+
     def __init__(self, compare_rules=None):
         if compare_rules is not None:
             self.compare_rules = compare_rules
         else:
             self.compare_rules = dict()
         self.clear()
+
 
     @classmethod
     def make_from_inverses(klass, data, unfilled_value=None, compare_rules=None):
@@ -116,7 +119,7 @@ class ElementSummary(object):
 
         size = None
         for key, values in data_iterator:
-            # assure the length all values is the same
+            # ensure the length all values is the same
             if size is None:
                 size = len(values)
             elif len(values) != size:
@@ -241,7 +244,7 @@ class ElementSummary(object):
         return True
 
 
-    def _unsafe_append_single(self, idx, data):
+    def _append_single(self, idx, data):
         # this function is considered unsafe because changing the sizes of the
         # varying elements to accommodate the inserted data must be done
         # externally.
@@ -302,7 +305,7 @@ class ElementSummary(object):
             del self._const_elems[key]
 
 
-    def _unsafe_append_summary(self, idx, other):
+    def _append_summary(self, idx, other):
         # extensively used structures
         if other.size == 1:
             new_part = idx
@@ -401,11 +404,11 @@ class ElementSummary(object):
         if not isinstance(data, ElementSummary):
             # append regular sequence
             self.resize(self.size + 1)
-            self._unsafe_append_single(idx, data)
+            self._append_single(idx, data)
         elif data.size > 0:
             # append ElementSummary if it is not empty
             self.resize(self.size + data.size)
-            self._unsafe_append_summary(idx, data)
+            self._append_summary(idx, data)
 
 
     def extend(self, data_seq, guess_size=None):
@@ -439,7 +442,7 @@ class ElementSummary(object):
                     new_size = req_size + chunk_size - (req_size % chunk_size)
                     self.resize(new_size)
                 # append data
-                self._unsafe_append_summary(cur_idx, data)
+                self._append_summary(cur_idx, data)
                 # increment current index
                 cur_idx += data.size
             else:
@@ -448,7 +451,7 @@ class ElementSummary(object):
                 if cur_idx >= self.size:
                     self.resize(self.size + chunk_size)
                 # append data
-                self._unsafe_append_single(cur_idx, data)
+                self._append_single(cur_idx, data)
                 # increment current index
                 cur_idx += 1
 
@@ -458,20 +461,25 @@ class ElementSummary(object):
 
 
     def reduce(self, indices):
-        # remove indices from all the varying elements
-        del_keys = []
-        for key, var_elem in six.iteritems(self._varying_elems):
-            # reduce the varying element
-            var_elem.reduce(indices)
-            # ghandle elements that are not still varying
-            if var_elem.is_empty():
-                del_keys.append(key)
-            elif var_elem.is_constant():
-                self._const_elems[key], _ = var_elem.popitem()
-                del_keys.append(key)
-        # delete elements that are no longer varying
-        for key in del_keys:
-            del self._varying_elems[key]
+        new_size = len(indices)
+        if new_size == 0:
+            self.clear()
+        else:
+            self._size = new_size
+            # remove indices from all the varying elements
+            del_keys = []
+            for key, var_elem in six.iteritems(self._varying_elems):
+                # reduce the varying element
+                var_elem.reduce(indices)
+                # ghandle elements that are not still varying
+                if var_elem.is_empty():
+                    del_keys.append(key)
+                elif var_elem.is_constant():
+                    self._const_elems[key], _ = var_elem.popitem()
+                    del_keys.append(key)
+            # delete elements that are no longer varying
+            for key in del_keys:
+                del self._varying_elems[key]
 
 
     def remove(self, indices):
@@ -479,12 +487,17 @@ class ElementSummary(object):
         self.reduce([i for i in range(self.size) if i not in indices])
 
 
+    def empty_copy(self):
+        return ElementSummary(compare_rules=self.compare_rules)
+
+
     def subset(self, indices):
-        result = ElementSummary(compare_rules=self.compare_rules)
+        result = self.empty_copy()
         # return empty ElementSummary if there are no indices to fill it with
         if len(indices) == 0:
             return result
 
+        self._size = len(indices)
         result._const_elems = self._const_elems.copy()
 
         if len(indices) > 1:
@@ -508,11 +521,12 @@ class ElementSummary(object):
                 except KeyError:
                     # index is unfilled for key, do not add to subset
                     continue
-
         return result
 
 
-    def _split(self, mask, key, default=None):
+    def split_mask(self, key, mask=None, default=None):
+        if mask is None:
+            mask = ones_bitarray(self.size)
         if key in self._const_elems:
             yield self._const_elems[key], mask.copy()
         elif key not in self._varying_elems:
@@ -537,26 +551,26 @@ class ElementSummary(object):
 
 
     def split(self, key, default=None):
-        mask = ones_bitarray(self.size)
-        for val, val_mask in self._split(mask, key, default):
+        for val, val_mask in self.split_mask(key, default):
             yield val, self.subset(bitarray_to_indices(val_mask))
 
 
-    def _group(self, prv_mask, keys, default=None):
+    def group_mask(self, keys, mask=None, default=None):
+        if mask is None:
+            mask = ones_bitarray(self.size)
         if len(keys) == 1:
-            for val, mask in self._split(prv_mask, keys[0], default):
-                yield (val,), mask
+            for pvt_val, pvt_msk in self.split_mask(keys[0], mask, default):
+                yield (pvt_val,), pvt_msk
         else:
-            for val, mask in self._split(prv_mask, keys[0], default):
-                for grp_vals, grp_mask in self._group(mask, keys[1:], default):
-                    yield (val,) + grp_vals, grp_mask
+            for pvt_val, pvt_msk in self.split_mask(keys[0], mask, default):
+                for vals, msk in self.group_mask(keys[1:], pvt_msk, default):
+                    yield (pvt_val,) + vals, msk
 
 
     def group(self, keys, default=None):
         """Generator that splits the summary into sub-summaries that share the
         same values for the given set of keys."""
-        mask = ones_bitarray(self.size)
-        for grp_vals, grp_mask in self._group(mask, keys, default):
+        for grp_vals, grp_mask in self.group_mask(keys, default):
             yield grp_vals, self.subset(bitarray_to_indices(grp_mask))
 
 
@@ -873,12 +887,12 @@ class VaryingElement(collections.OrderedDict):
         [4]
         """
         if isinstance(indices, bitarray):
-            # assure that the length is the same
+            # ensure that the length is the same
             if indices.length() != self.size:
                 raise ValueError
             self._setitem_bitarray(key, indices)
         elif isinstance(indices, Integral):
-            # assure that the index is with in the range
+            # ensure that the index is with in the range
             if indices < 0 or indices >= self.size:
                 raise IndexError
             self._setitem_int(key, indices)
@@ -895,7 +909,7 @@ class VaryingElement(collections.OrderedDict):
     def _unsafe_assign_int(self, repr_key, idx):
         # this associates the index 'idx' with the value 'repr_key' without
         # performing the work of removing any previous association that 'idx'.
-        # This function is unsafe because the caller must assure that the
+        # This function is unsafe because the caller must ensure that the
         # passed in index will not cause the constraint that each index is only
         # associated with one value be broken. This is used when it is known
         # that the passed in index is not currently associated with any value
@@ -915,7 +929,7 @@ class VaryingElement(collections.OrderedDict):
         # this associates the indices in 'barray' with the value 'repr_key'
         # without performing the work of removing any previous association that
         # the indices in 'barray'. This function is unsafe because the caller
-        # must assure that the passed in indices will not cause the constraint
+        # must ensure that the passed in indices will not cause the constraint
         # that each index is only associated with one value be broken. This is
         # used when it is known that the passed in indices are not currently
         # associated with any value
