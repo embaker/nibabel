@@ -100,16 +100,16 @@ class ElementSummary(object):
 
 
     @classmethod
-    def make_from_inverses(klass, data, unfilled_value=None, compare_rules=None):
+    def make_from_lists(cls, data, unfilled_value=None, compare_rules=None):
         """
 
         Example
         -------
         >>> data = [('a', [1, 2, 1]), ('b', [3, 3, 3])]
-        >>> summary = ElementSummary.make_from_inverses(data)
+        >>> summary = ElementSummary.make_from_lists(data)
         """
 
-        result = ElementSummary(compare_rules=compare_rules)
+        result = cls(compare_rules=compare_rules)
 
         # convience conversion to allow for sequence of pairs or dictionaries
         if isinstance(data, dict):
@@ -126,9 +126,9 @@ class ElementSummary(object):
                 raise ValueError
             # create varying element for key
             cmp_func = None if compare_rules is None else compare_rules.get(key)
-            elem = VaryingElement.make_from_inverse(values,
-                                                    unfilled_key=unfilled_value,
-                                                    cmp_func=cmp_func)
+            elem = VaryingElement.make_from_list(values,
+                                                 unfilled_value=unfilled_value,
+                                                 cmp_func=cmp_func)
             # determine how values vary
             if elem.is_empty():
                 # if completely unfilled, then do not add
@@ -279,8 +279,8 @@ class ElementSummary(object):
                 if not cmp_rep(const_val, value):
                     # The element is no longer const, move it to the varying
                     var_elem = VaryingElement(size=self.size, cmp_func=cmp_func)
-                    var_elem[const_val] = slice(0, idx, 1)
-                    var_elem._unsafe_assign_int(value, idx)
+                    var_elem[const_val] = slice(0, idx)
+                    var_elem[value] = idx
                     self._varying_elems[key] = var_elem
                     del self._const_elems[key]
                 # The value is still const, continue
@@ -288,7 +288,7 @@ class ElementSummary(object):
 
             if key in self._varying_elems:
                 # Mark location in varying element object
-                self._varying_elems[key]._unsafe_assign_int(value, idx)
+                self._varying_elems[key].assign(value, idx)
             else:
                 # Haven't seen this key before, add to varying_elems
                 # because missing values are not considered const
@@ -300,7 +300,7 @@ class ElementSummary(object):
         for key in unvisited_const_keys:
             var_elem = VaryingElement(size=self.size,
                                       cmp_func=self.compare_rules.get(key))
-            var_elem[self._const_elems[key]] = slice(0, idx, 1)
+            var_elem[self._const_elems[key]] = slice(0, idx)
             self._varying_elems[key] = var_elem
             del self._const_elems[key]
 
@@ -308,14 +308,14 @@ class ElementSummary(object):
     def _append_summary(self, idx, other):
         # extensively used structures
         if other.size == 1:
-            new_part = idx
+            other_part = idx
         else:
-            new_part = slice_to_bitarray(slice(idx, idx+other.size), self.size)
+            other_part = slice(idx, idx+other.size)
 
         if idx == 1:
-            old_part = 0
+            this_part = 0
         else:
-            old_part = slice_to_bitarray(slice(0, idx), self.size)
+            this_part = slice(0, idx)
 
         # creating the 8 possible key set combinations
         other_const = set(other._const_elems.keys())
@@ -339,7 +339,7 @@ class ElementSummary(object):
         for key in other_const:
             var_elem = VaryingElement(size=self.size,
                                       cmp_func=self.compare_rules.get(key))
-            var_elem._unsafe_set(other._const_elems[key], new_part.copy())
+            var_elem[other._const_elems[key]] = other_part
             self._varying_elems[key] = var_elem
 
         # keys that are only in other.varying_elems
@@ -355,7 +355,7 @@ class ElementSummary(object):
         for key in this_const:
             var_elem = VaryingElement(size=self.size,
                                       cmp_func=self.compare_rules.get(key))
-            var_elem._unsafe_set(self._const_elems[key], old_part.copy())
+            var_elem[self._const_elems[key]] = this_part
             self._varying_elems[key] = var_elem
             del self._const_elems[key]
 
@@ -363,7 +363,7 @@ class ElementSummary(object):
         for key in this_const_other_vary:
             var_elem = VaryingElement(size=self.size,
                                       cmp_func=self.compare_rules.get(key))
-            var_elem._unsafe_set(self._const_elems[key], old_part.copy())
+            var_elem[self._const_elems[key]] = this_part
             self._varying_elems[key] = var_elem
             del self._const_elems[key]
 
@@ -371,15 +371,13 @@ class ElementSummary(object):
         wrk_array = bitarray(self.size)
         for key in this_vary_other_vary | this_const_other_vary:
             other_elem = other._varying_elems[key]
-            this_elem = self._varying_elems[key]
             for other_key, other_val in six.iteritems(other_elem):
-                repr_key = this_elem._find_repr_key(other_key)
                 if isinstance(other_val, bitarray):
                     wrk_array.setall(0)
-                    wrk_array[idx : idx + other.size] = other_val
-                    this_elem._unsafe_assign_bitarray(repr_key, wrk_array)
+                    wrk_array[other_part] = other_val
+                    self._varying_elems[key].assign(other_key, wrk_array)
                 else:
-                    this_elem._unsafe_assign_int(repr_key, idx + other_val)
+                    self._varying_elems[key].assign(other_key, idx + other_val)
 
         # intersection of constant elements
         for key in this_const_other_const:
@@ -387,16 +385,14 @@ class ElementSummary(object):
             cmp_rep = operator.eq if cmp_func is None else cmp_func
             if not cmp_rep(self._const_elems[key], other._const_elems[key]):
                 var_elem = VaryingElement(size=self.size, cmp_func=cmp_func)
-                var_elem._unsafe_set(self._const_elems[key], old_part.copy())
-                var_elem._unsafe_set(other._const_elems[key], new_part.copy())
+                var_elem[self._const_elems[key]] = this_part
+                var_elem[other._const_elems[key]] = other_part
                 self._varying_elems[key] = var_elem
                 del self._const_elems[key]
 
         # intersection of self.varying_elems and other.const_elems
         for key in this_vary_other_const:
-            var_elem = self._varying_elems[key]
-            repr_key = var_elem._find_repr_key(other._const_elems[key])
-            var_elem._unsafe_assign_bitarray(repr_key, new_part.copy())
+            self._varying_elems[key].assign(other._const_elems[key], other_part)
 
 
     def append(self, data):
@@ -494,10 +490,10 @@ class ElementSummary(object):
     def subset(self, indices):
         result = self.empty_copy()
         # return empty ElementSummary if there are no indices to fill it with
-        if len(indices) == 0:
+        if not indices:
             return result
 
-        self._size = len(indices)
+        result._size = len(indices)
         result._const_elems = self._const_elems.copy()
 
         if len(indices) > 1:
@@ -533,25 +529,22 @@ class ElementSummary(object):
             yield default, mask.copy()
         else:
             pvt_elem = self._varying_elems[key]
-            filled = zeros_bitarray(self.size)
             for pvt_key, pvt_val in six.iteritems(pvt_elem):
                 if isinstance(pvt_val, bitarray):
-                    filled |= pvt_val
                     new_mask = mask & pvt_val
                     if any(new_mask):
                         yield pvt_key, new_mask
-                else:
-                    filled[pvt_val] = 1
-                    if mask[pvt_val] == 1:
-                        yield pvt_key, integer_to_bitarray(pvt_val, self.size)
+                elif mask[pvt_val] == 1:
+                    yield pvt_key, integer_to_bitarray(pvt_val, self.size)
             # yield sub-summary for unfilled indices
-            new_mask = mask & ~filled
-            if any(new_mask):
-                yield default, new_mask
+            if pvt_elem.unfilled is not None:
+                new_mask = pvt_elem.unfilled & mask
+                if any(new_mask):
+                    yield default, new_mask
 
 
     def split(self, key, default=None):
-        for val, val_mask in self.split_mask(key, default):
+        for val, val_mask in self.split_mask(key, default=default):
             yield val, self.subset(bitarray_to_indices(val_mask))
 
 
@@ -570,7 +563,7 @@ class ElementSummary(object):
     def group(self, keys, default=None):
         """Generator that splits the summary into sub-summaries that share the
         same values for the given set of keys."""
-        for grp_vals, grp_mask in self.group_mask(keys, default):
+        for grp_vals, grp_mask in self.group_mask(keys, default=default):
             yield grp_vals, self.subset(bitarray_to_indices(grp_mask))
 
 
@@ -670,7 +663,7 @@ class ElementSummary(object):
                 grp_mapping = np.transpose(coord_to_idx, vary_axes)
             # use mapping to create array of values
             for key, vary_elem in six.iteritems(vary_elems):
-                vary_elems[key] = np.asarray(vary_elem.inverse())[grp_mapping]
+                vary_elems[key] = np.asarray(vary_elem.to_list())[grp_mapping]
 
         # add constant elems
         variation_groups['const'] = self._const_elems
@@ -686,6 +679,9 @@ class ElementSummary(object):
 #
 #
 #===============================================================================
+class VeryingElementValueTypeError(Exception):
+    pass
+
 class VaryingElement(collections.OrderedDict):
     """A memory efficient structure for a one-to-many mapping of a value to a
     positional index.
@@ -693,7 +689,7 @@ class VaryingElement(collections.OrderedDict):
     This mapping is the inverse of that of a list or array:
 
     >>> values = ['a', 'a', 'b', 'a', 'b']
-    >>> velem = VaryingElement.make_from_inverse(values)
+    >>> velem = VaryingElement.make_from_list(values)
     >>> velem['a']
     [0, 1, 3]
     >>> velem['b']
@@ -713,9 +709,16 @@ class VaryingElement(collections.OrderedDict):
             considered equivalent.
         """
         if size < 0:
-            raise ValueError
+            raise ValueError("size is less than 0")
         super(VaryingElement, self).__init__()
+        # initialize the internal atrribute that keeps track of the size
         self._size = size
+        # initialize self._unfilled; the attribute that keeps track of the
+        # unfilled indices
+        if self._size == 0:
+            self._unfilled = None
+        else:
+            self._unfilled = ones_bitarray(self._size)
         self.cmp_func = cmp_func
 
 
@@ -736,23 +739,50 @@ class VaryingElement(collections.OrderedDict):
     def _unsafe_del(self, repr_key):
         super(VaryingElement, self).__delitem__(repr_key)
 
-    def _find_repr_key(self, key):
-        if self.cmp_func is None:
-            return key
-        else:
-            for repr_key in six.iterkeys(super(VaryingElement, self)):
-                if self.cmp_func(key, repr_key):
-                    return repr_key
-            return key
 
     def __getitem__(self, key):
-        repr_key = self._find_repr_key(key)
+        repr_key = self.get_key(key)
         return super(VaryingElement, self).__getitem__(repr_key)
 
 
     def get(self, key, default=None):
-        repr_key = self._find_repr_key(key)
+        repr_key = self.get_key(key)
         return super(VaryingElement, self).get(repr_key, default)
+
+
+    def get_key(self, key):
+        if self.cmp_func is None:
+            return key
+        else:
+            for repr_key in six.iterkeys(self):
+                if self.cmp_func(key, repr_key):
+                    return repr_key
+            return key
+
+    def get_item(self, key, default=None):
+        """Retrieve a key already contained in the element that is equivalent to
+        the supplied key along with its value. If there is no equivalent key
+        already in the element, then the supplied key with the value of supplied
+        by the default parameter will be returned.
+        """
+        repr_key = self.get_key(key)
+        return repr_key, super(VaryingElement, self).get(repr_key, default)
+
+
+    def __delitem__(self, key):
+        repr_key, val = self.get_item(key)
+        if val is not None:
+            if self._unfilled is None:
+                self._unfilled = as_bitarray(val, self.size)
+            elif isinstance(val, bitarray):
+                self._unfilled |= val
+            elif isinstance(val, Integral):
+                self._unfilled[val] = 1
+            else:
+                raise VeryingElementValueTypeError
+            self._unsafe_del(repr_key)
+        else:
+            raise KeyError
 
 
     def _unassign_int(self, idx, ignore_keys={}):
@@ -777,7 +807,7 @@ class VaryingElement(collections.OrderedDict):
         not_barray = ~barray
         # filter out indices in other elements that are part of the new element
         del_keys = []
-        for old_key, old_val in six.iteritems(super(VaryingElement, self)):
+        for old_key, old_val in six.iteritems(self):
             if old_key in ignore_keys:
                 continue
             if isinstance(old_val, bitarray):
@@ -807,7 +837,7 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'a', 'b', 'a', 'b'])
+        >>> velem = VaryingElement.make_from_list(['a', 'a', 'b', 'a', 'b'])
         >>> velem.unassign(indices=[0, 1, 2], ignore_keys={'b'})
         >>> velem['a']
         [3]
@@ -829,38 +859,124 @@ class VaryingElement(collections.OrderedDict):
 
 
     def _setitem_int(self, key, index):
-        repr_key = self._find_repr_key(key)
-        old_key = self._unassign_int(index, {repr_key})
-        if repr_key != key:
-            self.__delitem__(repr_key)
-        # add the new element
-        self._unsafe_set(key, index)
+        # ensure that the index is with in the range
+        if index < 0 or index >= self.size:
+            raise IndexError
+        # retrieve already contained equivalent key and its value
+        repr_key, val  = self.get_item(key)
+        if self._unfilled is None:
+            # element is full
+            if val is None:
+                # key is not already in the element
+                self._unassign_int(index)
+                self._unsafe_set(repr_key, index)
+            elif isinstance(val, bitarray):
+                if val[index] == 0:
+                    # only unassign if index is not already associated with key
+                    self._unassign_int(index, {repr_key})
+                # move the indices being overwritten to unfilled
+                self._unfilled = val
+                self._unfilled[index] = 0
+                # replace key's value with supplied index
+                self._unsafe_set(repr_key, index)
+            elif isinstance(val, Integral):
+                if val != index:
+                    # only perform work if changing the key's value
+                    self._unassign_int(index, {repr_key})
+                    self._unfilled = integer_to_bitarray(val, self.size)
+                    self._unsafe_set(repr_key, index)
+            else:
+                raise VeryingElementValueTypeError
+        else:
+            # element is not full
+            # move the value being replaced to unfilled
+            if isinstance(val, bitarray):
+                self._unfilled |= val
+            elif isinstance(val, Integral):
+                self._unfilled[val] = 1
+            elif val is not None:
+                raise VeryingElementValueTypeError
+            # only perform unassignment work if index is associated with another
+            # key
+            if self._unfilled[index] == 0:
+                self._unassign_int(index, {repr_key})
+            # replace key's value with supplied index
+            self._unsafe_set(repr_key, index)
+            # update and clean unfilled index tracker
+            self._unfilled[index] = 0
+            if not any(self._unfilled):
+                self._unfilled = None
 
 
     def _setitem_bitarray(self, key, indices):
+        # enusre that input bitarray is of valid size
+        if indices.length() != self.size:
+            raise ValueError
         # handle special cases
         count = indices.count(1)
-        if count == 1:
-            self._setitem_int(key, indices.index(1))
-            return
-
-        repr_key = self._find_repr_key(key)
-
-        # handle special empty case
         if count == 0:
+            # treat empty bitarray as a delete
             try:
-                self._unsafe_del(repr_key)
+                self.__delitem__(key)
             except KeyError:
                 pass
             return
+        if count == 1:
+            # use integer specialization if only a single bit is set
+            self._setitem_int(key, indices.index(1))
+            return
 
-        if repr_key != key:
-            self.__delitem__(repr_key)
+        # retrieve already contained equivalent key and its value
+        repr_key, val  = self.get_item(key)
 
-        # unassign shared indices in other entries
-        self._unassign_bitarray(indices, {repr_key})
-        # add the new element
-        self._unsafe_set(key, indices)
+        if self._unfilled is None:
+            # element is full
+            if val is None:
+                # key is not already in the element
+                self._unassign_bitarray(indices)
+                self._unsafe_set(repr_key, indices)
+            elif isinstance(val, bitarray):
+                # the key already has bitarray for a value
+                if any(indices & ~val):
+                    # only unassign if indices are not already associated with
+                    # the supplied key
+                    self._unassign_bitarray(indices, {repr_key})
+                # move to unfilled the indices being overwritten and not in the
+                # new set of  indices to unfilled
+                self._unfilled = val & ~indices
+                if not any(self._unfilled):
+                    self._unfilled = None
+                # replace key's value with supplied bitarray
+                self._unsafe_set(repr_key, indices)
+            elif isinstance(val, Integral):
+                # the key already has integer for a value
+                if indices[val] == 0:
+                    # only need to create unfilled if index not in replacement
+                    self._unfilled = integer_to_bitarray(val, self.size)
+                # always need to unassign
+                self._unassign_bitarray(indices, {repr_key})
+                self._unsafe_set(repr_key, indices)
+            else:
+                raise VeryingElementValueTypeError
+        else:
+            # element is not full
+            # move the value being replaced to unfilled
+            if isinstance(val, bitarray):
+                self._unfilled |= val
+            elif isinstance(val, Integral):
+                self._unfilled[val] = 1
+            elif val is not None:
+                raise VeryingElementValueTypeError
+            # only perform unassignment work if any indices are associated with
+            # another key
+            if any(indices & ~self._unfilled):
+                self._unassign_bitarray(indices, {repr_key})
+            # replace key's value with supplied index
+            self._unsafe_set(repr_key, indices)
+            # update and clean unfilled index tracker
+            self._unfilled &= ~indices
+            if not any(self._unfilled):
+                self._unfilled = None
 
 
     def __setitem__(self, key, indices):
@@ -875,7 +991,7 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'a', 'b', 'a', 'b'])
+        >>> velem = VaryingElement.make_from_list(['a', 'a', 'b', 'a', 'b'])
         >>> velem['a']
         [0, 1, 3]
         >>> velem['b']
@@ -887,14 +1003,8 @@ class VaryingElement(collections.OrderedDict):
         [4]
         """
         if isinstance(indices, bitarray):
-            # ensure that the length is the same
-            if indices.length() != self.size:
-                raise ValueError
             self._setitem_bitarray(key, indices)
         elif isinstance(indices, Integral):
-            # ensure that the index is with in the range
-            if indices < 0 or indices >= self.size:
-                raise IndexError
             self._setitem_int(key, indices)
         elif isinstance(indices, slice):
             barray = slice_to_bitarray(indices, self.size)
@@ -903,45 +1013,95 @@ class VaryingElement(collections.OrderedDict):
             barray = iterable_to_bitarray(indices, self.size)
             self._setitem_bitarray(key, barray)
         else:
-            raise TypeError
+            raise VeryingElementValueTypeError
 
 
-    def _unsafe_assign_int(self, repr_key, idx):
-        # this associates the index 'idx' with the value 'repr_key' without
-        # performing the work of removing any previous association that 'idx'.
-        # This function is unsafe because the caller must ensure that the
-        # passed in index will not cause the constraint that each index is only
-        # associated with one value be broken. This is used when it is known
-        # that the passed in index is not currently associated with any value
-        old_val = super(VaryingElement, self).get(repr_key)
-        if old_val is None:
-            self._unsafe_set(repr_key, idx)
-        elif isinstance(old_val, bitarray):
-            old_val[idx] = 1
+    def _assign_int(self, key, index):
+        # check that the index is within the bounds
+        if index >= self.size or index < 0:
+            raise IndexError
+        # retrieve already contained equivalent key and its value
+        repr_key, val = self.get_item(key)
+        if self._unfilled is None or self._unfilled[index] == 0:
+            if isinstance(val, Integral):
+                if index != val:
+                    self._unassign_int(index, {repr_key})
+                    new_val = iterable_to_bitarray((val, index), self.size)
+                    self._unsafe_set(repr_key, new_val)
+            elif isinstance(val, bitarray):
+                if val[index] != 1:
+                    self._unassign_int(index, {repr_key})
+                    val[index] = 1
+            elif val is None:
+                self._unassign_int(index, {repr_key})
+                self._unsafe_set(key, index)
+            else:
+                raise VeryingElementValueTypeError
         else:
-            new_val = zeros_bitarray(self.size)
-            new_val[old_val] = 1
-            new_val[idx] = 1
-            self._unsafe_set(repr_key, new_val)
+            if isinstance(val, Integral):
+                new_val = iterable_to_bitarray((val, index), self.size)
+                self._unsafe_set(repr_key, new_val)
+            elif isinstance(val, bitarray):
+                val[index] = 1
+            elif val is None:
+                self._unsafe_set(key, index)
+            else:
+                raise VeryingElementValueTypeError
+            # remove newly assigned from unfilled array
+            self._unfilled[index] = 0
+            if not any(self._unfilled):
+                self._unfilled = None
 
 
-    def _unsafe_assign_bitarray(self, repr_key, barray):
-        # this associates the indices in 'barray' with the value 'repr_key'
-        # without performing the work of removing any previous association that
-        # the indices in 'barray'. This function is unsafe because the caller
-        # must ensure that the passed in indices will not cause the constraint
-        # that each index is only associated with one value be broken. This is
-        # used when it is known that the passed in indices are not currently
-        # associated with any value
-        old_val = super(VaryingElement, self).get(repr_key)
-        if old_val is None:
-            self._unsafe_set(repr_key, barray.copy())
-        elif isinstance(old_val, bitarray):
-            old_val |= barray
+    def _assign_bitarray(self, key, indices):
+        # enusre that input bitarray is of valid size
+        if indices.length() != self.size:
+            raise ValueError
+        # handle special cases
+        count = indices.count(1)
+        if count == 0:
+            # don't do anything if bitarray is empty
+            return
+        if count == 1:
+            # use integer specialization if only a single bit is set
+            self._assign_int(key, indices.index(1))
+            return
+        # retrieve already contained equivalent key and its value
+        repr_key, val = self.get_item(key)
+        if self._unfilled is None:
+            self._unassign_bitarray(indices, {repr_key})
+            if val is None:
+                self._unsafe_set(key, indices.copy())
+            elif isinstance(val, bitarray):
+                val |= indices
+            elif isinstance(val, Integral):
+                new_val = indices.copy()
+                new_val[val] = 1
+                self._unsafe_set(repr_key, new_val)
+            else:
+                raise VeryingElementValueTypeError
         else:
-            new_val = barray.copy()
-            new_val[old_val] = 1
-            self._unsafe_set(repr_key, new_val)
+            if val is None:
+                cmp_array = self._unfilled
+                self._unsafe_set(repr_key, indices.copy())
+            elif isinstance(val, bitarray):
+                cmp_array = val | self._unfilled
+                val |= indices
+            elif isinstance(val, Integral):
+                cmp_array = self._unfilled.copy()
+                cmp_array[val] = 1
+                new_val = indices.copy()
+                new_val[val] = 1
+                self._unsafe_set(repr_key, new_val)
+            else:
+                raise VeryingElementValueTypeError
+            # unassign bits from other keys if neccessary
+            if any(indices & ~cmp_array):
+                self._unassign_bitarray(indices, {repr_key})
+            # remove newly assigned from unfilled array
+            self._unfilled &= ~indices
+            if not any(self._unfilled):
+                self._unfilled = None
 
 
     def assign(self, key, indices):
@@ -964,7 +1124,7 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'a', 'b', 'a', 'b'])
+        >>> velem = VaryingElement.make_from_list(['a', 'a', 'b', 'a', 'b'])
         >>> velem['a']
         [0, 1, 3]
         >>> velem['b']
@@ -976,38 +1136,16 @@ class VaryingElement(collections.OrderedDict):
         [1, 2, 4]
         """
         if isinstance(indices, bitarray):
-            count = indices.count(1)
-            if count > 1:
-                repr_key = self._find_repr_key(key)
-                self._unassign_bitarray(indices, {repr_key})
-                self._unsafe_assign_bitarray(key, indices)
-            elif count == 1:
-                self.assign(key, indices.index(1))
+            self._assign_bitarray(key, indices)
         elif isinstance(indices, Integral):
-            repr_key = self._find_repr_key(key)
-            self._unassign_int(indices)
-            self._unsafe_assign_int(repr_key, indices)
+            self._assign_int(key, indices)
         elif isinstance(indices, slice):
-            barray = slice_to_bitarray(indices, self.size)
-            self.assign(key, barray)
+            self.assign(key, slice_to_bitarray(indices, self.size))
         elif isinstance(indices, collections.Iterable):
-            barray = iterable_to_bitarray(indices, self.size)
-            self.assign(key, barray)
+            self.assign(key, iterable_to_bitarray(indices, self.size))
         else:
-            raise ValueError
+            raise VeryingElementValueTypeError
 
-
-    def _convert_to_array(self, repr_key):
-        prev_val = super(VaryingElement, self).get(repr_key)
-        if isinstance(prev_val, bitarray):
-            return prev_val
-        else:
-            new_val = bitarray(self.size)
-            new_val.setall(0)
-            if isinstance(prev_val, Integral):
-                new_val[prev_val] = 1
-            self._unsafe_set(repr_key, new_val)
-            return new_val
 
     #----------------------------------------------------------------------
     # logic functions
@@ -1030,15 +1168,6 @@ class VaryingElement(collections.OrderedDict):
         return not self.__eq__(other)
 
 
-    def are_keys_equal(self, other):
-        if len(self) != len(other):
-            return False
-        if self.cmp_func is None:
-            return self.viewkeys() == other.viewkeys()
-        else:
-            return all(self.__contains__(key) for key in six.iterkeys(other))
-
-
     def is_empty(self):
         """Test if there are no indices mapped to a key"""
         return len(self) == 0
@@ -1046,7 +1175,7 @@ class VaryingElement(collections.OrderedDict):
 
     def is_full(self):
         """Test if every index has a key mapped to it"""
-        return self.unfilled is None
+        return self._unfilled is None
 
 
     def is_constant(self):
@@ -1075,13 +1204,13 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem1 = VaryingElement.make_from_inverse(['a', 'a', 'b', 'a', 'b'])
-        >>> velem2 = VaryingElement.make_from_inverse([5.0, 5.0, 2.0, 5.0, 2.0])
+        >>> velem1 = VaryingElement.make_from_list(['a', 'a', 'b', 'a', 'b'])
+        >>> velem2 = VaryingElement.make_from_list([5.0, 5.0, 2.0, 5.0, 2.0])
         >>> velem1.is_equivalent(velem2)
         True
         >>> velem2.is_equivalent(velem1)
         True
-        >>> velem3 = VaryingElement.make_from_inverse([1, 2, 2, 2, 1])
+        >>> velem3 = VaryingElement.make_from_list([1, 2, 2, 2, 1])
         >>> velem1.is_equivalent(velem3)
         False
         """
@@ -1167,7 +1296,19 @@ class VaryingElement(collections.OrderedDict):
         -------
         """
         other2this = [0] * self.size
-        fill_count = 0
+
+        if (isinstance(self._unfilled, bitarray) and
+            isinstance(other._unfilled, bitarray)):
+            # map the unfilled elements
+            this_indices = bitarray_to_indices(self._unfilled)
+            other_indices = bitarray_to_indices(other._unfilled)
+            if len(other_indices) != len(this_indices):
+                return None
+            for other_idx, this_idx in zip(other_indices, this_indices):
+                other2this[other_idx] = this_idx
+        elif self.unfilled is not None or other.unfilled is not None:
+            return None
+
         for key in six.iterkeys(self):
             this_indices = self.where(key)
             other_indices = other.where(key)
@@ -1175,19 +1316,7 @@ class VaryingElement(collections.OrderedDict):
                 return None
             for other_idx, this_idx in zip(other_indices, this_indices):
                 other2this[other_idx] = this_idx
-            fill_count += len(this_indices)
-        # handle mapping for unfilled indices
-        if self.size == fill_count + 1:
-            # if there is a single unfilled index then VaryingElement.unfilled
-            # will that index
-            other2this[other.unfilled] = self.unfilled
-        elif fill_count != self.size:
-            # if there are multiple unfilled indices then
-            # VaryingElement.unfilled will return a bitarray
-            this_indices = [i for i, b in self.unfilled if b]
-            other_indices = [i for i, b in other.unfilled if b]
-            for other_idx, this_idx in zip(other_indices, this_indices):
-                other2this[other_idx] = this_idx
+
         return other2this
 
 
@@ -1197,7 +1326,7 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'a', 'b', 'a', 'b'])
+        >>> velem = VaryingElement.make_from_list(['a', 'a', 'b', 'a', 'b'])
         >>> velem.unassign(indices=[0, 1, 2], ignore_keys={'b'})
         >>> velem['a']
         [3]
@@ -1206,43 +1335,72 @@ class VaryingElement(collections.OrderedDict):
         >>> velem.unfilled
         '10010'
         """
-        unfilled_val = bitarray(self._size)
-        unfilled_val.setall(0)
-        for key, val in six.iteritems(super(VaryingElement, self)):
-            if isinstance(val, bitarray):
-                unfilled_val |= val
-            else:
-                unfilled_val[val] = 1
-        unfilled_val.invert()
-        # determing storage type
-        count = unfilled_val.count(1)
-        if count > 1:
-            return unfilled_val
-        elif count == 1:
-            return unfilled_val.index(1)
-        else:
-            return None
+        return self._unfilled
+
 
     #----------------------------------------------------------------------
     # modifier functions
     #----------------------------------------------------------------------
 
-    def resize(self, n):
+    def resize(self, new_size):
         """Change the number of indices"""
-        if n > self._size:
-            size_dif = n - self._size
-            self._size = n
-            padding = bitarray(size_dif)
-            padding.setall(0)
+        # check that the size is not trying to be set to a negative value
+        if new_size < 0:
+            raise ValueError("size less than 0")
+
+        old_size = self._size
+        self._size = new_size
+        size_diff = new_size - old_size
+
+        if size_diff > 1:
+            # increasing size
+            padding = zeros_bitarray(size_diff)
             for key, val in six.iteritems(super(VaryingElement, self)):
                 if isinstance(val, bitarray):
                     val.extend(padding)
-        elif n < self._size:
-            self._size = n
+            # mark all new indices as unfilled
+            if isinstance(self._unfilled, bitarray):
+                padding.setall(1)
+                self._unfilled.extend(padding)
+            else:
+                slc = slice(old_size, new_size)
+                self._unfilled = slice_to_bitarray(slc, new_size)
+
+        elif size_diff == 1:
+            # increasing size by one
             for key, val in six.iteritems(super(VaryingElement, self)):
                 if isinstance(val, bitarray):
-                    self._unsafe_set(key, val[:n])
-            self.clean()
+                    val.append(0)
+            # mark all new indices as unfilled
+            if isinstance(self._unfilled, bitarray):
+                self._unfilled.append(1)
+            else:
+                self._unfilled = integer_to_bitarray(old_size, new_size)
+
+        elif size_diff < 0:
+            # decreasing size
+            del_keys = []
+            for key, val in six.iteritems(super(VaryingElement, self)):
+                if isinstance(val, bitarray):
+                    new_val = val[:new_size]
+                    count = new_val.count(1)
+                    if count == 0:
+                        del_keys.append(key)
+                    elif count == 1:
+                        self._unsafe_set(key, new_val.index(1))
+                    else:
+                        self._unsafe_set(key, new_val)
+                elif val > new_size:
+                    del_keys.append(key)
+
+            for key in del_keys:
+                self._unsafe_del(key)
+
+            # shrink unfilled bitarray
+            if isinstance(self._unfilled, bitarray):
+                self._unfilled = self._unfilled[:new_size]
+                if not any(self._unfilled):
+                    self._unfilled = None
 
 
     def reorder(self, new2old):
@@ -1250,9 +1408,9 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd', 'e'])
+        >>> velem = VaryingElement.make_from_list(['a', 'b', 'c', 'd', 'e'])
         >>> velem.reorder([2, 3, 1, 0, 4])
-        >>> velem.inverse()
+        >>> velem.to_list()
         ['c', 'd', 'b', 'a', 'e']
         """
         # if any((i < 0 or i >= self.size) for i in new2old):
@@ -1267,144 +1425,90 @@ class VaryingElement(collections.OrderedDict):
             self._unsafe_set(key, new_val)
 
 
-    def change_compare_function(self, cmp_func):
-        self.cmp_func = cmp_func
-        if self.cmp_func is None:
-            return
-        rem_keys = set(key for key in six.iterkeys(super(VaryingElement, self)))
-        combo = {}
-        for key in six.iterkeys(super(VaryingElement, self)):
-            rem_keys.discard(key)
-            cmp_set = set()
-            for cmp_key in rem_keys:
-                if self.cmp_func(key, cmp_key):
-                    cmp_set.add(cmp_key)
-            if len(cmp_set) != 0:
-                rem_keys -= cmp_set
-                combo[key] = cmp_set
-
-        while len(combo) > 0:
-            del_keys = []
-            for key, sub_keys in six.iteritems(combo):
-                if all((sub_key not in combo) for sub_key in sub_keys):
-                    del_keys.append(key)
-                    val = self._convert_to_array(key)
-                    for sub_key in sub_keys:
-                        sub_val = super(VaryingElement, self).get(sub_key)
-                        if isinstance(sub_val, bitarray):
-                            val |= sub_val
-                        else:
-                            val[sub_val] = 1
-            for del_key in del_keys:
-                for sub_key in combo[del_key]:
-                    self._unsafe_del(sub_key)
-                del combo[del_key]
-        self.clean()
+    def extend_with_list(self, other, unfilled_value=None):
+        old_size = self.size
+        self.resize(old_size + len(other))
+        for idx, key in enumerate(other):
+            if key == unfilled_value:
+                # do nothing for input indicating unfilled elements
+                continue
+            # mark as filled in unfilled tracker
+            self._unfilled[idx] = 0
+            repr_key, val = self.get_item(key)
+            if val is None:
+                self._unsafe_set(repr_key, idx)
+            elif isinstance(val, bitarray):
+                val[idx] = 1
+            else:
+                new_val = iterable_to_bitarray((val, idx), self.size)
+                self._unsafe_set(repr_key, new_val)
+        # clean unfilled
+        if not any(self._unfilled):
+            self._unfilled = None
 
 
-    def extend(self, other):
+    def extend(self, other, unfilled_value=None):
         """Merge a VaryingElement instance into this one.
 
         Example
         -------
-        >>> velem1 = VaryingElement.make_from_inverse(['a', 'a', 'b', 'a'])
-        >>> velem2 = VaryingElement.make_from_inverse(['c', 'b', 'b', 'c'])
+        >>> velem1 = VaryingElement.make_from_list(['a', 'a', 'b', 'a'])
+        >>> velem2 = VaryingElement.make_from_list(['c', 'b', 'b', 'c'])
         >>> velem1.extend(velem2)
-        >>> velem1.inverse()
+        >>> velem1.to_list()
         ['a', 'a', 'b', 'a', 'c', 'b', 'b', 'c']
         >>> velem1['b']
         [2, 5, 6]
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'b'])
+        >>> velem = VaryingElement.make_from_list(['a', 'b'])
         >>> more_values = ['c', 'b']
         >>> velem.extend(more_values)
-        >>> velem.inverse()
+        >>> velem.to_list()
         [a', 'b', c', 'b']
         >>> velem['b']
         [1, 3]
         """
-        old_size = self.size
+
         if isinstance(other, VaryingElement):
+            old_size = self.size
             self.resize(old_size + other.size)
 
+            # append unfilled
+            if other._unfilled is not None:
+                self._unfilled[old_size:] = other._unfilled
+            # clean unfilled
+            if not any(self._unfilled):
+                self._unfilled = None
+
             for other_key, other_val in six.iteritems(other):
+                repr_key, val = self.get_item(other_key)
 
-                repr_key = self._find_repr_key(other_key)
-
-                if repr_key not in self:
+                if val is None:
                     if isinstance(other_val, bitarray):
-                        new_val = bitarray(self.size)
-                        new_val.setall(0)
+                        new_val = zeros_bitarray(self.size)
                         new_val[old_size:] = other_val
-                    else:
+                    elif isinstance(other_val, Integral):
                         new_val =  other_val + old_size
                     self._unsafe_set(repr_key, new_val)
 
-                else:
-                    old_val = super(VaryingElement, self).get(repr_key)
-                    if isinstance(old_val, bitarray):
-                        if isinstance(other_val, bitarray):
-                            old_val[old_size:] |= other_val
-                        else:
-                            old_val[old_size + other_val] = 1
-                    else:
-                        new_val = bitarray(self.size)
-                        new_val.setall(0)
-                        new_val[old_val] = 1
-                        if isinstance(other_val, bitarray):
-                            new_val[old_size:] |= other_val
-                        else:
-                            new_val[old_size + other_val] = 1
-                        self._unsafe_set(repr_key, new_val)
+                elif isinstance(val, bitarray):
+                    if isinstance(other_val, bitarray):
+                        val[old_size:] |= other_val
+                    elif isinstance(other_val, Integral):
+                        val[old_size + other_val] = 1
+
+                elif isinstance(val, Integral):
+                    new_val = integer_to_bitarray(val, self.size)
+                    if isinstance(other_val, bitarray):
+                        new_val[old_size:] |= other_val
+                    elif isinstance(other_val, Integral):
+                        new_val[old_size + other_val] = 1
+                    self._unsafe_set(repr_key, new_val)
         else:
             # assume 'other' is a list-like structure of values
-            self.resize(old_size + len(other))
-            for idx, other_key in enumerate(other, old_size):
-                repr_key = self._find_repr_key(other_key)
-                self._unsafe_assign_int(repr_key, idx)
-
-
-    def reduce(self, new2old):
-        self._size = len(new2old)
-        del_keys = []
-        for key, old_val in six.iteritems(super(VaryingElement, self)):
-            if isinstance(old_val, bitarray):
-                # the occurences of the value are given by bitarray
-
-                # collapse bitarray
-                new_val = bitarray([old_val[i] for i in new2old])
-
-                count = new_val.count(1)
-                if count > 1:
-                    # multiple occurences; add collapsed bitarray
-                    self._unsafe_set(key, new_val)
-                elif count == 1:
-                    # one occurence; add the single position
-                    self._unsafe_set(key, new_val.index(1))
-                else:
-                    # no occurences; add key to list so that it will be removed
-                    del_keys.append(key)
-
-            elif isinstance(old_val, Integral):
-                count = new2old.count(old_val)
-                if count > 1:
-                    # multiple occurences; change to bitarray
-                    new_val = bitarray([old_val == i for i in new2old])
-                    self._unsafe_set(key, new_val)
-                elif count == 1:
-                    # there is a single occurence of the value
-                    self._unsafe_set(key, new2old.index(old_val))
-                else:
-                    # no occurence; add key to list so that it will be removed
-                    del_keys.append(key)
-
-            else:
-                raise TypeError
-
-        for del_key in del_keys:
-            self._unsafe_del(del_key)
+            self.extend_with_list(other, unfilled_value)
 
 
     def insert(self, key, idx):
@@ -1412,31 +1516,30 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'a', 'a', 'a'])
+        >>> velem = VaryingElement.make_from_list(['a', 'a', 'a', 'a'])
         >>> velem.insert('b', 1)
-        >>> velem.inverse()
+        >>> velem.to_list()
         ['a', 'b', 'a', 'a', 'a']
         """
         self._size += 1
-        repr_key = self._find_repr_key(key)
-        # insert into other elements
-        for itr_key, itr_val in six.iteritems(super(VaryingElement, self)):
+        # insert filled marker bit into unfilled tracker
+        if self._unfilled is not None:
+            self._unfilled.insert(idx, 0)
+        # insert space into all items
+        for itr_key, itr_val in six.iteritems(self):
             if isinstance(itr_val, bitarray):
                 itr_val.insert(idx, 0)
-            elif itr_val >= idx:
-                self._unsafe_set(itr_key, itr_val + 1)
-
+            elif isinstance(itr_val, Integral):
+                if itr_val >= idx:
+                    self._unsafe_set(itr_key, itr_val + 1)
         # insert into key element
-        val = super(VaryingElement, self).get(repr_key)
+        repr_key, val = self.get_item(key)
         if val is None:
             self._unsafe_set(repr_key, idx)
         elif isinstance(val, bitarray):
             val[idx] = 1
         else:
-            new_val = bitarray(self._size)
-            new_val.setall(0)
-            new_val[val] = 1
-            new_val[idx] = 1
+            new_val = iterable_to_bitarray((val, idx), self.size)
             self._unsafe_set(repr_key, new_val)
 
 
@@ -1445,22 +1548,31 @@ class VaryingElement(collections.OrderedDict):
 
         Example
         -------
-        >>> velem = VaryingElement.make_from_inverse(['a', 'b', 'a', 'a'])
+        >>> velem = VaryingElement.make_from_list(['a', 'b', 'a', 'a'])
         >>> velem.append('b')
-        >>> velem.inverse()
+        >>> velem.to_list()
         ['a', 'b', 'a', 'a', 'b']
         """
-        for val in six.itervalues(super(VaryingElement, self)):
+        old_size = self.size
+        self._size += 1
+        # append filled marker bit into unfilled tracker
+        if self._unfilled is not None:
+            self._unfilled.append(0)
+        # append all bitarrays
+        for val in six.itervalues(self):
             if isinstance(val, bitarray):
                 val.append(0)
-        repr_key = self._find_repr_key(key)
-        if repr_key in self:
-            self._size += 1
-            self._convert_to_array(repr_key)
-            super(VaryingElement, self).__getitem__(repr_key)[-1] = 1
-        else:
-            self._unsafe_set(repr_key, self._size)
-            self._size += 1
+        # actual insertion of value
+        repr_key, val = self.get_item(key)
+        if val is None:
+            self._unsafe_set(repr_key, old_size)
+        elif isinstance(val, bitarray):
+            val[old_size] = 1
+        elif isinstance(val, Integral):
+            new_val = zeros_bitarray(self.size)
+            new_val[val] = 1
+            new_val[old_size] = 1
+            self._unsafe_set(repr_key, new_val)
 
 
     #----------------------------------------------------------------------
@@ -1468,30 +1580,91 @@ class VaryingElement(collections.OrderedDict):
     #----------------------------------------------------------------------
 
     @classmethod
-    def make_from_inverse(klass, inv, cmp_func=None, unfilled_key=None):
+    def make_from_list(klass, vals, unfilled_value=None, **kargs):
         """Make a VaryingElement instance from an iterable collection of keys.
 
         Example
         -------
 
         >>> values = ['a', 'a', 'b', 'a', 'b']
-        >>> velem = VaryingElement.make_from_inverse(values)
+        >>> velem = VaryingElement.make_from_list(values)
         >>> velem['a']
         [0, 1, 3]
         >>> velem['b']
         [2, 4]
         """
-        out = klass(size=len(inv), cmp_func=cmp_func)
-        for idx, key in enumerate(inv):
-            if key == unfilled_key:
-                continue
-            repr_key = out._find_repr_key(key)
-            out._unsafe_assign_int(repr_key, idx)
+        out = klass(size=0, **kargs)
+        out.extend_with_list(vals, unfilled_value)
         return out
 
 
     @classmethod
-    def make_from_dict(klass, other, cmp_func=None):
+    def make_constant(cls, value, size, **kargs):
+        """Makes a new instance that is filled with a single value"""
+        out = cls(size=size, **kargs)
+        if out.size == 1:
+            out._unsafe_set(value, 0)
+        elif out.size > 1:
+            out._unsafe_set(value, out._unfilled)
+        out._unfilled = None
+        return out
+
+
+    @classmethod
+    def make_combined(cls, elems, **kargs):
+        """Make a new instance by combining multiple instances together.
+        """
+        if not all(isinstance(elem, VaryingElement) for elem in elems):
+            raise ValueError
+        out = cls(size=sum(elem.size for elem in elems), **kargs)
+        idx0 = 0
+        for elem in elems:
+            if elem.size == 0:
+                continue
+            # the range in the new element for which the current element will be
+            # inserted
+            slc = slice(idx0, idx0 + elem.size)
+            # insert unfilled
+            if elem.unfilled is None:
+                out._unfilled[slc] = 0
+            else:
+                out._unfilled[slc] = elem.unfilled
+            # insert values
+            for key, val in six.iteritems(elem):
+                okey, oval = out.get_item(key)
+                if isinstance(val, bitarray):
+                    if oval is None:
+                        new_val = zeros_bitarray(out.size)
+                        new_val[slc] = val
+                        out._unsafe_set(okey, new_val)
+                    elif isinstance(oval, bitarray):
+                        oval[slc] = val
+                    elif isinstance(oval, Integral):
+                        new_val = zeros_bitarray(out.size)
+                        new_val[slc] = val
+                        new_val[oval] = 1
+                        out._unsafe_set(okey, new_val)
+                elif isinstance(val, Integral):
+                    idx = idx0 + val
+                    if oval is None:
+                        out._unsafe_set(okey, idx)
+                    elif isinstance(oval, bitarray):
+                        oval[idx] = 1
+                    elif isinstance(oval, Integral):
+                        new_val = zeros_bitarray(out.size)
+                        new_val[oval] = 1
+                        new_val[idx] = 1
+                        out._unsafe_set(okey, new_val)
+            # increment origin index
+            idx0 += elem.size
+        # clean unfilled tracker
+        if not any(out._unfilled):
+            out._unfilled = None
+        return out
+
+
+    @classmethod
+    def make_from_dict(cls, other, cmp_func=None):
         #TODO: better description
         """Make a VaryingElement instance from a dictionary"""
 
@@ -1516,7 +1689,7 @@ class VaryingElement(collections.OrderedDict):
         except KeyError:
             other_len = max_idx + 1
 
-        result = klass(size=other_len, cmp_func=cmp_func)
+        result = cls(size=other_len, cmp_func=cmp_func)
 
         for key, val in six.iteritems(other):
             result._unsafe_set(key, val)
@@ -1528,7 +1701,15 @@ class VaryingElement(collections.OrderedDict):
     def subset(self, new2old):
         result = VaryingElement(size=len(new2old),
                                 cmp_func=self.cmp_func)
-        for key, old_val in six.iteritems(super(VaryingElement, self)):
+        # collapse unfilled tracker
+        if self._unfilled is None:
+            result._unfilled = None
+        else:
+            result._unfilled = bitarray([self._unfilled[i] for i in new2old])
+            if not any(result._unfilled):
+                result._unfilled = None
+
+        for key, old_val in six.iteritems(self):
             if isinstance(old_val, bitarray):
                 # the occurences of the value are given by bit array
 
@@ -1575,21 +1756,30 @@ class VaryingElement(collections.OrderedDict):
 
     def clean(self):
         del_keys = []
+        self._unfilled = zeros_bitarray(self.size)
         for key, val in six.iteritems(self):
             if isinstance(val, bitarray):
+                self._unfilled |= val
                 count = val.count(1)
                 if count == 1:
                     self._unsafe_set(key, val.index(1))
                 elif count == 0:
                     del_keys.append(key)
-            elif self._size <= val or val < 0:
-                del_keys.append(key)
+            elif isinstance(val, Integral):
+                if self.size <= val or val < 0:
+                    del_keys.append(key)
+                else:
+                    self._unfilled[val] = 1
 
         for key in del_keys:
             self._unsafe_del(key)
 
+        self._unfilled.invert()
+        if not any(self._unfilled):
+            self._unfilled = None
 
-    def inverse(self, unfilled_key=None):
+
+    def to_list(self, unfilled_key=None):
         """Produce the inverse mapping of index to value.
 
         Parameters
@@ -1602,7 +1792,7 @@ class VaryingElement(collections.OrderedDict):
         >>> velem = VaryingElement(size=6)
         >>> velem['a'] = [0, 3, 5]
         >>> velem['b'] = [1, 2]
-        >>> velem.inverse(unfilled_key='c')
+        >>> velem.to_list(unfilled_key='c')
         ['a', 'b', 'b', 'a', 'c', 'a']
         """
         inv = [unfilled_key] * self.size
@@ -1617,8 +1807,7 @@ class VaryingElement(collections.OrderedDict):
 
     def where(self, key):
         """Get the positional indices for the key"""
-        repr_key = self._find_repr_key(key)
-        val = self.get(repr_key)
+        repr_key, val = self.get_item(key)
         if val is None:
             return list()
         if isinstance(val, bitarray):
@@ -1737,6 +1926,45 @@ class VaryingElement(collections.OrderedDict):
 #
 #
 #===============================================================================
+def product(*args, **kargs):
+    """Iterate """
+    mask = kargs.get('mask')
+    if mask is None:
+        mask = ones_bitarray(args[0].size)
+    dflt = kargs.get('default')
+    if len(args) == 1:
+        # last element in recursion
+        for key, val in six.iteritems(args[0]):
+            if isinstance(val, Integral):
+                if mask[val]:
+                    yield (key,), integer_to_bitarray(val, args[0].size)
+            elif isinstance(val, bitarray):
+                prd = mask & val
+                if any(prd):
+                    yield (key,), prd
+        if args[0].unfilled is not None:
+            prd = mask & args[0].unfilled
+            if any(prd):
+                yield (dflt,), prd
+    else:
+        for key, val in six.iteritems(args[0]):
+            if isinstance(val, Integral):
+                if mask[val]:
+                    prd = integer_to_bitarray(val, args[0].size)
+                    for sky, svl in product(*args[1:], default=dflt, mask=prd):
+                        yield (key,) + sk, sv
+            elif isinstance(val, bitarray):
+                prd = mask & val
+                if any(prd):
+                    for sky, svl in product(*args[1:], default=dflt, mask=prd):
+                        yield (key,) + sky, svl
+        if args[0].unfilled is not None:
+            prd = mask & args[0].unfilled
+            if any(prd):
+                for sky, svl in product(*args[1:], default=dflt, mask=prd):
+                    yield (dflt,) + sky, svl
+
+
 def find_axes(guess_keys, var_elems):
     #TODO; better description
     """Find a set of elements whose values form a coordinate basis.
@@ -1870,6 +2098,6 @@ def summary_variation(elem_summary, axes_elems):
             grp_coord_to_idx = np.transpose(coord_to_idx, vary_axes)
 
         for key, vary_elem in six.iteritems(vary_elems):
-            vary_elems[key] = np.asarray(vary_elem.inverse())[grp_coord_to_idx]
+            vary_elems[key] = np.asarray(vary_elem.to_list())[grp_coord_to_idx]
 
     return variation_groups

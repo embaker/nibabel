@@ -45,15 +45,14 @@ class TestVaryingElement(TestCase):
 
     def test_get(self):
         # without comparision function
-        elem = VaryingElement.make_from_inverse([1, 1, 5, 1])
+        elem = VaryingElement.make_from_list([1, 1, 5, 1])
         assert_equal(elem.get(1), bitarray('1101'))
         assert_equal(elem.get(5), 2)
         assert_equal(elem.get(9), None)
         assert_equal(elem.get(9, default='x'), 'x')
         # with comparision function
-        elem = VaryingElement.make_from_inverse([1, 1, 5, 1],
+        elem = VaryingElement.make_from_list([1, 1, 5, 1],
                                                 cmp_func=fnear(1))
-        print elem
         #assert_equal(elem.get(2), bitarray('1101'))
         assert_equal(elem.get(1), bitarray('1101'))
         assert_equal(elem.get(0), bitarray('1101'))
@@ -66,12 +65,12 @@ class TestVaryingElement(TestCase):
 
     def test__getitem__(self):
         # without comparision function
-        elem = VaryingElement.make_from_inverse([1, 1, 5, 1])
+        elem = VaryingElement.make_from_list([1, 1, 5, 1])
         assert_equal(elem[1], bitarray('1101'))
         assert_equal(elem[5], 2)
         assert_raises(KeyError, elem.__getitem__, 9)
         # with comparision function
-        elem = VaryingElement.make_from_inverse([1, 1, 5, 1],
+        elem = VaryingElement.make_from_list([1, 1, 5, 1],
                                                 cmp_func=fnear(1))
         assert_equal(elem[2], bitarray('1101'))
         assert_equal(elem[1], bitarray('1101'))
@@ -265,22 +264,6 @@ class TestVaryingElement(TestCase):
         assert_equal(result['d'], bitarray('00011000'))
 
 
-    def test__convert_to_array(self):
-        result = VaryingElement(size=5)
-
-        barr = bitarray('00101')
-        result['a'] = barr
-        result._convert_to_array('a')
-        assert_equal(result['a'], barr)
-
-        result['b'] = 1
-        result._convert_to_array('b')
-        assert_equal(result['b'], bitarray('01000'))
-
-        result._convert_to_array('c')
-        assert_equal(result['c'], bitarray('00000'))
-
-
     def test_resize(self):
         result = VaryingElement(size=3)
         result['a'] = bitarray('101')
@@ -333,41 +316,28 @@ class TestVaryingElement(TestCase):
         assert_equal(bitarray('0000000000000000111'), result['_+a'])
 
 
-    def test_reduce(self):
-        result = VaryingElement(size=9)
-        result[1] = bitarray('001100100')
-        result[2] = 1
-        result[3] = bitarray('100010000')
-        result[4] = 5
-        result[5] = bitarray('000000011')
-
-        result.reduce([2, 3, 5, 6, 7])
-
-        assert_equal(5, result.size)
-        assert_equal(3, len(result))
-        assert_equal(bitarray('11010'), result[1])
-        assert_equal(2, result[4])
-        assert_equal(4, result[5])
-
-
     def test_subset(self):
-        velem = VaryingElement.make_from_inverse([1, 3, 2, 1, 2, 3, 1])
+        velem = VaryingElement.make_from_list([1, 3, 2, 1, 2, 3, 1])
         selem = velem.subset([0, 2, 3, 4])
-        assert_equal([1, 2, 1, 2], selem.inverse())
+        assert_equal([1, 2, 1, 2], selem.to_list())
+        assert_equal([1, 3, 2, 1, 2, 3, 1], velem.to_list())
         # with unfilled values
-        velem = VaryingElement.make_from_inverse([1, 3, None, 1, None, 3, 1])
+        velem = VaryingElement.make_from_list([1, 3, None, 1, None, 3, 1])
         selem = velem.subset([0, 2, 3, 4])
-        assert_equal([1, None, 1, None], selem.inverse())
+        assert_equal([1, None, 1, None], selem.to_list())
+        assert_equal([1, 3, None, 1, None, 3, 1], velem.to_list())
         # empty subset
-        velem = VaryingElement.make_from_inverse([None, 3, None, 1, 0, 3, 1])
+        velem = VaryingElement.make_from_list([None, 3, None, 1, 0, 3, 1])
         selem = velem.subset([0, 2])
-        assert_equal([None, None], selem.inverse())
+        assert_equal([None, None], selem.to_list())
         assert_true(selem.is_empty())
+        assert_equal([None, 3, None, 1, 0, 3, 1], velem.to_list())
         # constant subset
-        velem = VaryingElement.make_from_inverse([1, 3, 2, 1, 2, 3, 1])
+        velem = VaryingElement.make_from_list([1, 3, 2, 1, 2, 3, 1])
         selem = velem.subset([0, 3, 6])
-        assert_equal([1, 1, 1], selem.inverse())
+        assert_equal([1, 1, 1], selem.to_list())
         assert_true(selem.is_constant())
+        assert_equal([1, 3, 2, 1, 2, 3, 1], velem.to_list())
 
 
     def test_insert(self):
@@ -396,7 +366,7 @@ class TestVaryingElement(TestCase):
         assert_equal(1, result['d'])
 
 
-    def test__find_repr_key(self):
+    def test_get_key(self):
         def cmp_func(x, y):
             if isinstance(x, float) and isinstance(y, float):
                 return abs(x - y) < 0.5
@@ -404,26 +374,75 @@ class TestVaryingElement(TestCase):
                 return False
         result = VaryingElement(size=5, cmp_func=cmp_func)
         result[1.2] = 4
-        key = result._find_repr_key(1.4)
+        key = result.get_key(1.4)
         assert_equal(1.2, key)
 
         result = VaryingElement(size=5)
         result[1.2] = 4
-        key = result._find_repr_key(1.4)
+        key = result.get_key(1.4)
         assert_equal(1.4, key)
 
 
-    def test_make_from_inverse(self):
-        result = VaryingElement.make_from_inverse([1,2,1,3,2,'NA',1],
-                                                  unfilled_key='NA')
+    def test_make_from_list(self):
+        result = VaryingElement.make_from_list([1,2,1,3,2,'NA',1],
+                                               unfilled_value='NA')
         assert_equal(7, result.size)
         assert_equal(result[1], bitarray('1010001'))
         assert_equal(result[2], bitarray('0100100'))
         assert_equal(result[3], 3)
-
-        result = VaryingElement.make_from_inverse([1])
+        assert_equal(result.unfilled, bitarray('0000010'))
+        # test cretion with a list of length 1
+        result = VaryingElement.make_from_list([1])
         assert_equal(1, result.size)
         assert_equal(result[1], 0)
+        assert_equal(result.unfilled, None)
+        # test empty creation
+        result = VaryingElement.make_from_list([0,0,0,0],
+                                               unfilled_value=0)
+        assert_equal(4, result.size)
+        assert_equal(0, len(result))
+        assert_true(result.is_empty())
+        assert_equal(result.unfilled, bitarray('1111'))
+
+
+    def test_make_constant(self):
+        # size > 1
+        velem = VaryingElement.make_constant('x', 4)
+        assert_true(velem.is_constant())
+        assert_equal(velem['x'], bitarray('1111'))
+        # size == 1
+        velem = VaryingElement.make_constant('x', size=1)
+        assert_true(velem.is_constant())
+        assert_equal(velem['x'], 0)
+
+
+    def test_make_combined(self):
+        # test completely filled
+        list1 = ['i_', 'ii', 'ib', 'bi', 'bi', 'bb', 'bb', 'b_', 'b_']
+        list2 = ['_i', 'ii', 'ib', 'ib', 'bi', 'bb', 'bb', '_b', '_b']
+        elems = [VaryingElement.make_from_list(list1),
+                 VaryingElement.make_from_list(list2)]
+        result = VaryingElement.make_combined(elems)
+        expected = VaryingElement.make_from_list(list1 + list2)
+        assert_equal(result, expected)
+        # test with comparison function
+        list1 = [1, 1, 2, 4, 7, 7]
+        list2 = [2, 2, 1, 5, 9]
+        elems = [VaryingElement.make_from_list(list1),
+                 VaryingElement.make_from_list(list2)]
+        result = VaryingElement.make_combined(elems, cmp_func=fnear(1))
+        full_list = list1 + list2
+        expected = VaryingElement.make_from_list(full_list, cmp_func=fnear(1))
+        assert_equal(result, expected)
+        # test with unfilled values
+        list1 = [0, 0, 1, 1, 2]
+        list2 = [0, 1, 2, 2]
+        elems = [VaryingElement.make_from_list(list1, unfilled_value=0),
+                 VaryingElement.make_from_list(list2, unfilled_value=0)]
+        result = VaryingElement.make_combined(elems)
+        full_list = list1 + list2
+        expected = VaryingElement.make_from_list(full_list, unfilled_value=0)
+        assert_equal(result, expected)
 
 
     def test_clean(self):
@@ -442,13 +461,13 @@ class TestVaryingElement(TestCase):
         assert_equal(result['d'], 4)
 
 
-    def test_inverse(self):
+    def test_to_list(self):
         result = VaryingElement(size=5)
         result['a'] = bitarray('01100')
         result['b'] = 4
 
         expected_inverse = ['NA', 'a', 'a', 'NA', 'b']
-        result_inverse = result.inverse(unfilled_key='NA')
+        result_inverse = result.to_list(unfilled_key='NA')
         assert_equal(expected_inverse, result_inverse)
 
 
@@ -502,26 +521,6 @@ class TestVaryingElement(TestCase):
         assert_equal(0, len(result))
         assert_equal(5, result.size)
         assert_true(result.cmp_func is cmpf)
-
-
-    def test_change_compare_function(self):
-        def cmpf(x, y):
-            return abs(x-y) < 0.5
-        result = VaryingElement(size=7)
-
-        result[1.0] = bitarray('1010000')
-        result[1.2] = 1
-        result[1.5] = 3
-        result[3.0] = bitarray('0000111')
-
-        result.change_compare_function(cmpf)
-
-        assert_equal(2, len(result))
-        assert_equal(bitarray('0000111'), result[3.0])
-
-        key = result._find_repr_key(1.2)
-        assert_true(key in (1.0, 1.2, 1.5))
-        assert_equal(bitarray('1111000'), result[key])
 
 
     def test_is_empty(self):
@@ -590,7 +589,7 @@ class TestVaryingElement(TestCase):
 
     def test_is_complementary(self):
         # v[i] is a n-dimensional array that varies only over index i
-        v2 = [VaryingElement.make_from_inverse(a.flatten())
+        v2 = [VaryingElement.make_from_list(a.flatten())
               for a in np.mgrid[0:3, 0:4]]
 
         assert_true(v2[0].is_complementary(v2[1]))
@@ -598,13 +597,13 @@ class TestVaryingElement(TestCase):
         assert_false(v2[0].is_complementary(v2[0]))
         assert_false(v2[1].is_complementary(v2[1]))
 
-        m2 = VaryingElement.make_from_inverse(([0]*4) + ([1]*8))
+        m2 = VaryingElement.make_from_list(([0]*4) + ([1]*8))
         assert_false(v2[0].is_complementary(m2))
         assert_false(v2[1].is_complementary(m2))
         assert_false(m2.is_complementary(v2[0]))
         assert_false(m2.is_complementary(v2[1]))
 
-        v3 = [VaryingElement.make_from_inverse(a.flatten())
+        v3 = [VaryingElement.make_from_list(a.flatten())
               for a in np.mgrid[0:2, 0:3, 0:4]]
 
         assert_true(v3[0].is_complementary(v3[1]))
@@ -613,24 +612,24 @@ class TestVaryingElement(TestCase):
 
     def test_is_permutation(self):
         # test 1-to-1 mapping
-        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd'])
-        velem2 = VaryingElement.make_from_inverse(['b', 'd', 'c', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', 'b', 'c', 'd'])
+        velem2 = VaryingElement.make_from_list(['b', 'd', 'c', 'a'])
         # any permutation
         assert_true(velem1.is_permutation(velem2))
         # specific permutation
         assert_true(velem1.is_permutation(velem2, [1, 3, 2, 0]))
         assert_false(velem1.is_permutation(velem2, [1, 3, 0, 2]))
         # test unfilled
-        velem1 = VaryingElement.make_from_inverse(['a', None, 'c', 'd'])
-        velem2 = VaryingElement.make_from_inverse([None, 'd', 'c', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', None, 'c', 'd'])
+        velem2 = VaryingElement.make_from_list([None, 'd', 'c', 'a'])
         # any permutation
         assert_true(velem1.is_permutation(velem2))
         # specific permutation
         assert_true(velem1.is_permutation(velem2, [1, 3, 2, 0]))
         assert_false(velem1.is_permutation(velem2, [1, 3, 0, 2]))
         # test 2-to-1 mapping
-        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'b', 'c'])
-        velem2 = VaryingElement.make_from_inverse(['b', 'c', 'b', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', 'b', 'b', 'c'])
+        velem2 = VaryingElement.make_from_list(['b', 'c', 'b', 'a'])
         # any permutation
         assert_true(velem1.is_permutation(velem2))
         # specific permutation
@@ -641,22 +640,22 @@ class TestVaryingElement(TestCase):
 
     def test_find_permutation(self):
         # test 1-to-1 mapping
-        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd'])
-        velem2 = VaryingElement.make_from_inverse(['b', 'd', 'c', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', 'b', 'c', 'd'])
+        velem2 = VaryingElement.make_from_list(['b', 'd', 'c', 'a'])
         assert_equal(velem1.find_permutation(velem2), [1, 3, 2, 0])
         # test unfilled
-        velem1 = VaryingElement.make_from_inverse(['a', None, 'c', 'd'])
-        velem2 = VaryingElement.make_from_inverse([None, 'd', 'c', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', None, 'c', 'd'])
+        velem2 = VaryingElement.make_from_list([None, 'd', 'c', 'a'])
         assert_equal(velem1.find_permutation(velem2), [1, 3, 2, 0])
         # test 2-to-1 mapping
-        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'b', 'c'])
-        velem2 = VaryingElement.make_from_inverse(['b', 'c', 'b', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', 'b', 'b', 'c'])
+        velem2 = VaryingElement.make_from_list(['b', 'c', 'b', 'a'])
         result_2to1 = velem1.find_permutation(velem2)
         assert_true(result_2to1 == [1, 3, 2, 0] or
                     result_2to1 == [2, 3, 1, 0])
         # test no permutation
-        velem1 = VaryingElement.make_from_inverse(['a', 'b', 'c', 'd'])
-        velem2 = VaryingElement.make_from_inverse(['b', 'e', 'c', 'a'])
+        velem1 = VaryingElement.make_from_list(['a', 'b', 'c', 'd'])
+        velem2 = VaryingElement.make_from_list(['b', 'e', 'c', 'a'])
         assert_true(velem1.find_permutation(velem2) is None)
 
 
@@ -677,14 +676,14 @@ def test_find_axes():
     other_data[:size/2] = 2
     other_data[0] = 3
     other_data[-1] = 4
-    var_elems['a'] = VaryingElement.make_from_inverse(other_data)
-    var_elems['b'] = VaryingElement.make_from_inverse(np.ravel(axes_data[0]))
+    var_elems['a'] = VaryingElement.make_from_list(other_data)
+    var_elems['b'] = VaryingElement.make_from_list(np.ravel(axes_data[0]))
 
     np.random.shuffle(other_data)
-    var_elems['c'] = VaryingElement.make_from_inverse(other_data)
-    var_elems['d'] = VaryingElement.make_from_inverse(np.ravel(axes_data[1]))
-    var_elems['e'] = VaryingElement.make_from_inverse(np.ravel(axes_data[2]))
-    var_elems['f'] = VaryingElement.make_from_inverse(np.ravel(axes_data[1]))
+    var_elems['c'] = VaryingElement.make_from_list(other_data)
+    var_elems['d'] = VaryingElement.make_from_list(np.ravel(axes_data[1]))
+    var_elems['e'] = VaryingElement.make_from_list(np.ravel(axes_data[2]))
+    var_elems['f'] = VaryingElement.make_from_list(np.ravel(axes_data[1]))
 
     axes = find_axes(['a','b','c','e','f'], var_elems)
     assert_equal(('b','e','f'), axes)
@@ -695,16 +694,16 @@ def test_determine_variation():
     shape = np.arange(2, n+2)
     size = np.prod(shape)
     vary = np.mgrid[tuple(slice(0, i, 1) for i in shape)]
-    axes = [VaryingElement.make_from_inverse(v.flatten())
+    axes = [VaryingElement.make_from_list(v.flatten())
             for v in vary]
-    single_axis = VaryingElement.make_from_inverse(np.arange(size))
-    const_elem = VaryingElement.make_from_inverse(np.ones(size))
+    single_axis = VaryingElement.make_from_list(np.arange(size))
+    const_elem = VaryingElement.make_from_list(np.ones(size))
 
     # multiple axes with varying element
     for n_axes in range(1, len(axes)-1):
         for var_axes in itertools.combinations(range(len(axes)), n_axes):
             inv = np.ravel(np.sum(vary[np.array(var_axes)], axis=0))
-            elem = VaryingElement.make_from_inverse(inv)
+            elem = VaryingElement.make_from_list(inv)
             result = determine_variation(elem, axes)
             assert_equal(set(var_axes), set(result))
 
@@ -751,19 +750,19 @@ def assert_equal_summaries(result, expected):
 
 class TestElementSummary(TestCase):
 
-    def test_make_from_inverses(self):
+    def test_make_from_lists(self):
         data = {'a' : [5, 5, 5, 5, 5, 5, 5],
                 'b' : [1, 1, 2, 2, 1, 1, 1],
                 'c' : [3, 4, 3, 3, 4, 4, 3],
                 'd' : [0, 0, 1, 1, 0, 2, 0],
                 'e' : [5, 0, 1, 1, 0, 4, 3],
                 'f' : [0, 0, 0, 0, 0, 0, 0]}
-        cmps = {'b' : lambda x, y: abs(x-y) < 2,
-                'e' : lambda x, y: abs(x-y) < 2}
+        cmps = {'b' : fnear(1),
+                'e' : fnear(1)}
         uval = 0
-        summary = ElementSummary.make_from_inverses(data,
-                                                    unfilled_value=uval,
-                                                    compare_rules=cmps)
+        summary = ElementSummary.make_from_lists(data,
+                                                 unfilled_value=uval,
+                                                 compare_rules=cmps)
         # check dimensions
         assert_equal(summary.size, 7)
         assert_equal(len(summary), 5)
@@ -772,21 +771,21 @@ class TestElementSummary(TestCase):
         assert_true(summary['b'] in (1, 2))
         # check varying elements
         assert_equal(summary['c'],
-                     VaryingElement.make_from_inverse(data['c'],
-                                                      unfilled_key=uval))
+                     VaryingElement.make_from_list(data['c'],
+                                                   unfilled_value=uval))
         assert_equal(summary['d'],
-                     VaryingElement.make_from_inverse(data['d'],
-                                                      unfilled_key=uval))
+                     VaryingElement.make_from_list(data['d'],
+                                                   unfilled_value=uval))
         assert_equal(summary['e'],
-                     VaryingElement.make_from_inverse(data['e'],
-                                                      unfilled_key=uval,
-                                                      cmp_func=cmps['e']))
+                     VaryingElement.make_from_list(data['e'],
+                                                   unfilled_value=uval,
+                                                   cmp_func=cmps['e']))
         # check empty elements
         assert_false('f' in summary)
         # test size check
         data = {'a' : [1] * 4,
                 'b' : [1] * 5}
-        assert_raises(ValueError, ElementSummary.make_from_inverses, data)
+        assert_raises(ValueError, ElementSummary.make_from_lists, data)
 
 
     # def test_remove(self):
@@ -828,21 +827,23 @@ class TestElementSummary(TestCase):
                        ('v->c', [1, 1, 2, 2, 1, 1, 1]),
                        ('v->v', [3, 4, 3, 3, 4, 4, 3]),
                        ('v->_', [None, None, 1, 1, None, 2, None])]
-        parent = ElementSummary.make_from_inverses(parent_data)
+        parent = ElementSummary.make_from_lists(parent_data)
         # multi index subset
         indices = [0, 1, 4, 6]
         child_data = [('c->c', [5, 5, 5, 5]),
                       ('v->c', [1, 1, 1, 1]),
                       ('v->v', [3, 4, 4, 3])]
-        child = ElementSummary.make_from_inverses(child_data)
+        child = ElementSummary.make_from_lists(child_data)
         assert_equal(parent.subset(indices), child)
+        assert_equal(parent, ElementSummary.make_from_lists(parent_data))
         # single index subset
         indices = [1]
         child_data = [('c->c', [5]),
                       ('v->c', [1]),
                       ('v->v', [4])]
-        child = ElementSummary.make_from_inverses(child_data)
+        child = ElementSummary.make_from_lists(child_data)
         assert_equal(parent.subset(indices), child)
+        assert_equal(parent, ElementSummary.make_from_lists(parent_data))
 
 
     def test_split(self):
@@ -865,9 +866,9 @@ class TestElementSummary(TestCase):
                            'd' : [2, 1],
                            'e' : [2, 2]},
                      }
-        parent = ElementSummary.make_from_inverses(parent_data,
-                                                   unfilled_value=0)
-        child = {key : ElementSummary.make_from_inverses(val, unfilled_value=0)
+        parent = ElementSummary.make_from_lists(parent_data,
+                                                unfilled_value=0)
+        child = {key : ElementSummary.make_from_lists(val, unfilled_value=0)
                  for key, val in six.iteritems(child_data)}
         # check using default default
         result = dict(item for item in parent.split(split_key))
@@ -909,9 +910,9 @@ class TestElementSummary(TestCase):
                                 'd' : [2, 1],
                                 'e' : [2, 2],
                                 'f' : [9, 9]}}
-        parent = ElementSummary.make_from_inverses(parent_data,
-                                                   unfilled_value=0)
-        child = {key : ElementSummary.make_from_inverses(val, unfilled_value=0)
+        parent = ElementSummary.make_from_lists(parent_data,
+                                                unfilled_value=0)
+        child = {key : ElementSummary.make_from_lists(val, unfilled_value=0)
                  for key, val in six.iteritems(child_data)}
         result = dict(item for item in parent.group(group_keys))
         assert_equal(result[(1, 7)], child[(1, 7)])
@@ -941,7 +942,7 @@ class TestElementSummary(TestCase):
         for key, val in six.iteritems(data):
             data[key] = val[mix_idx]
         # create summary containing one set of axes
-        summary = ElementSummary.make_from_inverses(data)
+        summary = ElementSummary.make_from_lists(data)
         # test finding no axes from guess keys
         guess_keys = ['y', 'z', 'a', 'b', 'c']
         random.shuffle(guess_keys)
@@ -967,7 +968,7 @@ class TestElementSummary(TestCase):
         assert_equal(expected_axes_keys, returned_axes_keys)
         # test finding axes when there is a duplicate of an axis
         data['w'] = data['x']
-        summary = ElementSummary.make_from_inverses(data)
+        summary = ElementSummary.make_from_lists(data)
         guess_keys = ['w', 'b', 'a', 'y', 'c', 'z', 'x']
         expected_axes_keys = {'w', 'y', 'z'}
         returned_axes_keys = set(summary.find_axes(guess_keys))
@@ -980,13 +981,13 @@ class TestElementSummary(TestCase):
         summary.resize(5)
         assert_equal(summary.size, 5)
         # increase resize of non-empty
-        summary = ElementSummary.make_from_inverses({'a' : [0, 1, 0, 1]})
+        summary = ElementSummary.make_from_lists({'a' : [0, 1, 0, 1]})
         assert_equal(summary.size, 4)
         summary.resize(6)
         assert_equal(summary.size, 6)
         assert_equal(summary['a'].size, 6)
         # increase resize of non-empty
-        summary = ElementSummary.make_from_inverses({'a' : [0, 1, 0, 1]})
+        summary = ElementSummary.make_from_lists({'a' : [0, 1, 0, 1]})
         assert_equal(summary.size, 4)
         summary.resize(2)
         assert_equal(summary.size, 2)
@@ -1028,13 +1029,13 @@ class TestElementSummary(TestCase):
         cmp_rules = {'cmp:v,v' : fnear(1),
                      'cmp:c,v' : fnear(1),
                      'cmp:v,c' : fnear(1)}
-        append = ElementSummary.make_from_inverses(append_data)
-        expected = ElementSummary.make_from_inverses(expected_data,
+        append = ElementSummary.make_from_lists(append_data)
+        expected = ElementSummary.make_from_lists(expected_data,
                                                      compare_rules=cmp_rules)
-        result = ElementSummary.make_from_inverses(initial_data,
+        result = ElementSummary.make_from_lists(initial_data,
                                                    compare_rules=cmp_rules)
         result.resize(initial_size + append_size)
-        result._unsafe_append_summary(initial_size, append)
+        result._append_summary(initial_size, append)
         assert_equal_summaries(result, expected)
 
 
@@ -1053,10 +1054,10 @@ class TestElementSummary(TestCase):
         assert_equal(summary.size, 2)
         assert_equal(set(summary._const_elems.keys()), {'b', 'c'})
         assert_equal(set(summary._varying_elems.keys()), {'a', 'd'})
-        assert_equal(summary['a'], VaryingElement.make_from_inverse([2, 1]))
+        assert_equal(summary['a'], VaryingElement.make_from_list([2, 1]))
         assert_equal(summary['b'], 0)
         assert_equal(summary['c'], 3)
-        assert_equal(summary['d'], VaryingElement.make_from_inverse([4, 0]))
+        assert_equal(summary['d'], VaryingElement.make_from_list([4, 0]))
         # third append
         summary.append({'b':0, 'c':2, 'd':0, 'e':5})
         assert_equal(summary.size, 3)
@@ -1065,11 +1066,11 @@ class TestElementSummary(TestCase):
         assert_equal(summary['c'], 3)
         assert_equal(set(summary._varying_elems.keys()), {'a', 'd', 'e'})
         assert_equal(summary['a'],
-                     VaryingElement.make_from_inverse([2, 1, None]))
+                     VaryingElement.make_from_list([2, 1, None]))
         assert_equal(summary['d'],
-                     VaryingElement.make_from_inverse([4, 0, 0]))
+                     VaryingElement.make_from_list([4, 0, 0]))
         assert_equal(summary['e'],
-                     VaryingElement.make_from_inverse([None, None, 5]))
+                     VaryingElement.make_from_list([None, None, 5]))
         # test appending of another Element Summary
         initial_data = {'a' : [0, 1, 0, 2, 2, 0],
                         'b' : [0, 0, 0, 0, 0, 0],
@@ -1090,9 +1091,9 @@ class TestElementSummary(TestCase):
                      'e' : initial_data['e'] + extended_data['e'],
                      'f' : initial_data['f'] + ([None]*5),
                      'g' : ([None]*6) + extended_data['g']}
-        expected = ElementSummary.make_from_inverses(full_data)
-        appended = ElementSummary.make_from_inverses(initial_data)
-        appended.append(ElementSummary.make_from_inverses(extended_data))
+        expected = ElementSummary.make_from_lists(full_data)
+        appended = ElementSummary.make_from_lists(initial_data)
+        appended.append(ElementSummary.make_from_lists(extended_data))
         assert_equal(appended.size, 11)
         assert_equal(appended, expected)
 
@@ -1137,7 +1138,7 @@ class TestElementSummary(TestCase):
         varying_keys = {'a','d','e','f'}
         assert_equal(set(summary._varying_elems.keys()), varying_keys)
         for key in varying_keys:
-            true_elem = VaryingElement.make_from_inverse(initial_data[key])
+            true_elem = VaryingElement.make_from_list(initial_data[key])
             assert_equal(summary[key], true_elem)
         # test addtional extend_data
         summary.extend(fake_outer(extended_data, 5))
@@ -1150,11 +1151,11 @@ class TestElementSummary(TestCase):
         varying_keys = {'a','c','d','e','f','g'}
         assert_equal(set(summary._varying_elems.keys()), varying_keys)
         for key in varying_keys:
-            true_elem = VaryingElement.make_from_inverse(full_data[key])
+            true_elem = VaryingElement.make_from_list(full_data[key])
             assert_equal(summary[key], true_elem)
         # test using guess_size
         # test inital extend on empty summary
-        true_summary = ElementSummary.make_from_inverses(initial_data)
+        true_summary = ElementSummary.make_from_lists(initial_data)
         # high guess
         summary = ElementSummary()
         summary.extend(fake_outer(initial_data, 6), guess_size=9)
@@ -1168,17 +1169,17 @@ class TestElementSummary(TestCase):
         summary.extend(fake_outer(initial_data, 6), guess_size=4)
         assert_equal(summary, true_summary)
         # test addtional extend_data
-        true_summary = ElementSummary.make_from_inverses(full_data)
+        true_summary = ElementSummary.make_from_lists(full_data)
         # high guess
-        summary = ElementSummary.make_from_inverses(initial_data)
+        summary = ElementSummary.make_from_lists(initial_data)
         summary.extend(fake_outer(extended_data, 5), guess_size=14)
         assert_equal(summary, true_summary)
         # exact guess
-        summary = ElementSummary.make_from_inverses(initial_data)
+        summary = ElementSummary.make_from_lists(initial_data)
         summary.extend(fake_outer(extended_data, 5), guess_size=11)
         assert_equal(summary, true_summary)
         # low guess
-        summary = ElementSummary.make_from_inverses(initial_data)
+        summary = ElementSummary.make_from_lists(initial_data)
         summary.extend(fake_outer(extended_data, 5), guess_size=9)
         assert_equal(summary, true_summary)
         # test the inclusion of summaries in input sequence
